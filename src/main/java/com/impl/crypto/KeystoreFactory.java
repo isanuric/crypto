@@ -20,20 +20,25 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
 @Service
-public class CipherFactory {
+public class KeystoreFactory {
 
     @Value("${keystore.path}")
     private String keystorePath;
 
-    Cipher getCipher(int mode)
-            throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException,
-                   UnrecoverableKeyException, NoSuchPaddingException, InvalidKeyException,
-                   InvalidAlgorithmParameterException {
+    Cipher getCipher(int mode) throws CryptoException {
 
-        SecretKeySpec secretKeySpecification = new SecretKeySpec(getKey().getEncoded(), "AES");
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(mode, secretKeySpecification, new IvParameterSpec(new byte[16]));
-        return cipher;
+        SecretKeySpec secretKeySpecification = null;
+        try {
+            secretKeySpecification = new SecretKeySpec(getKey().getEncoded(), "AES");
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher.init(mode, secretKeySpecification, new IvParameterSpec(new byte[16]));
+            return cipher;
+
+        } catch (IOException | KeyStoreException | CertificateException | NoSuchAlgorithmException |
+                UnrecoverableKeyException | NoSuchPaddingException | InvalidKeyException |
+                InvalidAlgorithmParameterException e) {
+            throw new CryptoException("Error encrypting/decrypting file", e);
+        }
     }
 
     Key getKey()

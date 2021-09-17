@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:with="lang=${#locale.language}" th:lang="${lang}">
+<!--<html xmlns:th="http://www.thymeleaf.org" th:with="lang=${#locale.language}" th:lang="${lang}">-->
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
   <title>Home</title>
 </head>
@@ -8,8 +8,42 @@
 <!--<h1>-->
 <!--  <span th:text="#{welcome.message}" />-->
 <!--</h1>-->
+
 <p>
   Current time is <span th:text="${time}" />
+</p>
+
+<p>
+  Decrypted: <span th:text="${decrypted}" />
+</p>
+
+<!--<h1>Form</h1>-->
+<!--<form action="#" th:action="@{/time}" th:object="${formData}" method="post">-->
+<!--  <p>Id: <input type="text" th:field="*{id}" /></p>-->
+<!--  <p>Message: <input type="text" th:field="*{content}" /></p>-->
+<!--  <p><input type="submit" value="Submit" /> <input type="reset" value="Reset" /></p>-->
+<!--</form>-->
+
+<form action="#" th:action="@{/time}" method="post" th:object="${formData}">
+  <label>Text to encrypt:</label>
+  <input type="text" th:field="*{plainText}" />
+
+  <select th:field="*{mode}">
+    <option th:value=1 th:text="Encrypt"></option>
+    <option th:value=2 th:text="Decrypt"></option>
+  </select>
+
+<!--  <select th:field="*{car}">-->
+<!--    <option th:each="car : ${cars}"-->
+<!--            th:value="${car}"-->
+<!--            th:text="#{${car}}">-->
+<!--    </option>-->
+<!--  </select>-->
+  <br/>
+  <button type="submit">Encrypt</button>
+</form>
+<p>
+  Encrypted: <span th:text="${encrypted}" />
 </p>
 
 </body>

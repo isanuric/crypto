@@ -8,6 +8,10 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
@@ -20,10 +24,10 @@ import java.security.cert.CertificateException;
 @Service
 public class Encryptor {
 
-    private CipherFactory cipherFactory;
+    private KeystoreFactory keystoreFactory;
 
-    public Encryptor(CipherFactory cipher) {
-        this.cipherFactory = cipher;
+    public Encryptor(KeystoreFactory cipher) {
+        this.keystoreFactory = cipher;
     }
 
     public byte[] encryptMessage(byte[] message, byte[] keyBytes)
@@ -46,24 +50,29 @@ public class Encryptor {
         return cipher.doFinal(encryptedMessage);
     }
 
-    public byte[] encryptMessageKeystore(final String message)
-            throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException,
-                   BadPaddingException, IllegalBlockSizeException, CertificateException,
-                   IOException, KeyStoreException, UnrecoverableKeyException,
-                   InvalidAlgorithmParameterException {
+    public byte[] doCrypto(int cipherMode, byte[] message)
+            throws CryptoException, IllegalBlockSizeException, BadPaddingException {
 
-        Cipher cipher = this.cipherFactory.getCipher(Cipher.ENCRYPT_MODE);
-        return cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
+        Cipher cipher = this.keystoreFactory.getCipher(cipherMode);
+        return cipher.doFinal(message);
     }
 
-    public byte[] decryptMessageKeystore(byte[] message)
-            throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException,
-                   BadPaddingException, IllegalBlockSizeException, CertificateException,
-                   IOException, KeyStoreException, UnrecoverableKeyException,
-                   InvalidAlgorithmParameterException {
+    public void doCryptoFile(int cipherMode, File inputFile, File outputFile)
+            throws CryptoException, IOException, IllegalBlockSizeException, BadPaddingException {
 
-        Cipher cipher = this.cipherFactory.getCipher(Cipher.DECRYPT_MODE);
-        return cipher.doFinal(message);
+        Cipher cipher = this.keystoreFactory.getCipher(cipherMode);
+
+        FileInputStream inputStream = new FileInputStream(inputFile);
+        byte[] inputBytes = new byte[(int) inputFile.length()];
+        inputStream.read(inputBytes);
+
+        byte[] outputBytes = cipher.doFinal(inputBytes);
+
+        FileOutputStream outputStream = new FileOutputStream(outputFile);
+        outputStream.write(outputBytes);
+
+        inputStream.close();
+        outputStream.close();
     }
 
 }
