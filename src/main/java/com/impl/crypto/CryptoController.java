@@ -30,16 +30,16 @@ import static java.util.Locale.getDefault;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 @Controller
-public class HomeController {
+public class CryptoController {
 
-    public static final String MESSAGE_ATTR = "message";
-    public static final String INDEX_HTML = "index";
     @Value("${uploads.path}")
     private String uploadsPath;
 
+    private static final String MESSAGE_ATTR = "message";
+    private static final String INDEX_HTML = "index";
     private final Encryptor encryptor;
 
-    public HomeController(Encryptor encryptor) {
+    public CryptoController(Encryptor encryptor) {
         this.encryptor = encryptor;
     }
 
@@ -108,7 +108,7 @@ public class HomeController {
         } catch (IOException | CryptoException | IllegalBlockSizeException | BadPaddingException e) {
             e.printStackTrace();
             model.addAttribute(MESSAGE_ATTR, "Can not execute cryptography process: " + e.getMessage());
-            return redirectUrl;
+            return INDEX_HTML;
         }
 
         model.addAttribute(MESSAGE_ATTR, "Cryptography process successfully done for: " + fileName);
