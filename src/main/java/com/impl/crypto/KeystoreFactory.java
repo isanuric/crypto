@@ -5,17 +5,16 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
@@ -25,32 +24,33 @@ public class KeystoreFactory {
     @Value("${keystore.path}")
     private String keystorePath;
 
-    Cipher getCipher(int mode) throws CryptoException {
-
+    Cipher getCipher(int mode)
+            throws UnrecoverableKeyException, CertificateException, IOException, KeyStoreException,
+                   NoSuchAlgorithmException, NoSuchPaddingException,
+                   InvalidKeyException,
+                   NoSuchProviderException {
         SecretKeySpec secretKeySpecification = null;
-        try {
-            secretKeySpecification = new SecretKeySpec(getKey().getEncoded(), "AES");
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipher.init(mode, secretKeySpecification, new IvParameterSpec(new byte[16]));
-            return cipher;
-
-        } catch (IOException | KeyStoreException | CertificateException | NoSuchAlgorithmException |
-                UnrecoverableKeyException | NoSuchPaddingException | InvalidKeyException |
-                InvalidAlgorithmParameterException e) {
-            throw new CryptoException("Error encrypting/decrypting file", e);
-        }
+        final byte[] key = getKey("K2sTgHZ6$rTNmasdDSAfjtu6754$EDFRt5").getEncoded();
+        secretKeySpecification = new SecretKeySpec(key, "AES");
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING");
+        // Cipher cipher = Cipher.getInstance("RSA/None/OAEPWithSHA-1AndMGF1Padding");
+        cipher.init(mode, secretKeySpecification);
+        return cipher;
     }
 
-    Key getKey()
+    Key getKey(String password)
             throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException,
-                   UnrecoverableKeyException {
+                   UnrecoverableKeyException, NoSuchProviderException {
 
         InputStream keystoreStream = new FileInputStream(keystorePath);
-        KeyStore keystore = KeyStore.getInstance("JCEKS");
-        keystore.load(keystoreStream, "mystorepass".toCharArray());
-        if (!keystore.containsAlias("jceksaes")) {
+        KeyStore keystore = null;
+        keystore = KeyStore.getInstance("PKCS12", "SUN");
+
+        keystore.load(keystoreStream, password.toCharArray());
+        if (!keystore.containsAlias("test")) {
             throw new KeyStoreException("Alias for key not found");
         }
-        return keystore.getKey("jceksaes", "asdDSA".toCharArray());
+        return keystore.getKey("test", password.toCharArray());
     }
 }
+

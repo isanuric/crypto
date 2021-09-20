@@ -10,14 +10,12 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
@@ -34,7 +32,8 @@ public class Encryptor {
             throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException,
                    BadPaddingException, IllegalBlockSizeException {
 
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        // Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         SecretKey secretKey = new SecretKeySpec(keyBytes, "AES");
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
         return cipher.doFinal(message);
@@ -51,14 +50,19 @@ public class Encryptor {
     }
 
     public byte[] doCrypto(int cipherMode, byte[] message)
-            throws CryptoException, IllegalBlockSizeException, BadPaddingException {
-
-        Cipher cipher = this.keystoreFactory.getCipher(cipherMode);
-        return cipher.doFinal(message);
+            throws UnrecoverableKeyException,
+                   NoSuchPaddingException, CertificateException, IOException, KeyStoreException,
+                   NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException,
+                   BadPaddingException, NoSuchProviderException {
+            Cipher cipher = this.keystoreFactory.getCipher(cipherMode);
+            return cipher.doFinal(message);
     }
 
     public void doCryptoFile(int cipherMode, File inputFile, File outputFile)
-            throws CryptoException, IOException, IllegalBlockSizeException, BadPaddingException {
+            throws IOException, IllegalBlockSizeException, BadPaddingException,
+                   UnrecoverableKeyException, NoSuchPaddingException, CertificateException,
+                   KeyStoreException, NoSuchAlgorithmException, InvalidKeyException,
+                   NoSuchProviderException {
 
         Cipher cipher = this.keystoreFactory.getCipher(cipherMode);
 
@@ -76,4 +80,5 @@ public class Encryptor {
     }
 
 }
+
 
