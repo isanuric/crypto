@@ -13,7 +13,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -21,12 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.InvalidKeyException;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.text.DateFormat;
 import java.util.Date;
 
@@ -60,7 +54,6 @@ public class CryptoController {
     @PostMapping("/crypto")
     public String doCrypto(@ModelAttribute("formData") FormData formData, Model model) {
         setDate(model);
-        try {
             var mode = formData.getMode();
             var text = formData.getText();
             var result = "";
@@ -74,9 +67,6 @@ public class CryptoController {
             }
             model.addAttribute("cryptoResult", result);
 
-        } catch (IOException | KeyStoreException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchProviderException e) {
-            e.printStackTrace();
-        }
         return INDEX_HTML;
     }
 
@@ -112,7 +102,7 @@ public class CryptoController {
                     new File(uploadsPath + fileName),
                     new File(uploadsPath + fileNameResult));
 
-        } catch (IOException | IllegalBlockSizeException | BadPaddingException | UnrecoverableKeyException | NoSuchPaddingException | CertificateException | KeyStoreException | NoSuchAlgorithmException | InvalidKeyException | NoSuchProviderException e) {
+        } catch (IOException | IllegalBlockSizeException | BadPaddingException | NoSuchAlgorithmException e) {
             e.printStackTrace();
             model.addAttribute(MESSAGE_ATTR, "Can not execute cryptography process: " + e.getMessage());
             return INDEX_HTML;
