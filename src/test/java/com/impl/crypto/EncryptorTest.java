@@ -5,15 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -26,15 +20,13 @@ class EncryptorTest {
     @RepeatedTest(1)
     void encryptMessageKeystore() {
         String plainText = "Initializing Spring embedded WebApplicationContext";
-        byte[] encrypted;
-            encrypted = encryptor.doCrypto(Cipher.ENCRYPT_MODE, plainText.getBytes(StandardCharsets.UTF_8));
-            byte[] decrypted = encryptor.doCrypto(Cipher.DECRYPT_MODE, encrypted);
-            assertEquals(plainText, new String(decrypted));
+        String encrypted = encryptor.encrypt(plainText);
+        String decrypted = encryptor.decrypt(encrypted);
+        assertEquals(plainText, decrypted);
     }
 
     @Test
-    void doCryptoFile() throws IOException, IllegalBlockSizeException, BadPaddingException,
-                               KeyStoreException, NoSuchAlgorithmException {
+    void doCryptoFile() throws Exception {
         encryptor.doCryptoFile(Cipher.ENCRYPT_MODE,
                 new File("src/main/resources/files/inputFile.txt"),
                 new File("src/main/resources/files/outputFile.txt"));
@@ -49,5 +41,6 @@ class EncryptorTest {
     }
 
 }
+
 
 

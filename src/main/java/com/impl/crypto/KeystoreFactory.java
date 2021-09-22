@@ -17,6 +17,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
@@ -35,8 +36,13 @@ public class KeystoreFactory {
             secretKeySpecification = new SecretKeySpec(key, "AES");
             cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
-            IvParameterSpec ivParameterSpec = new IvParameterSpec(new byte[16]);
-            cipher.init(cipherMode, secretKeySpecification, ivParameterSpec);
+            // Save the IV bytes or send it in plaintext with the encrypted data so you can decrypt the data later
+            byte[] iv = new byte[16];
+            if (cipherMode == 1) {
+                SecureRandom secureRandom = new SecureRandom();
+                secureRandom.nextBytes(iv);
+            }
+            cipher.init(cipherMode, secretKeySpecification, new IvParameterSpec(iv));
 
         } catch (NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException |
                 NoSuchAlgorithmException | UnrecoverableKeyException | CertificateException |
