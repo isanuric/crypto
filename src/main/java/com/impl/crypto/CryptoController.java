@@ -1,9 +1,9 @@
 package com.impl.crypto;
 
+import com.impl.crypto.encryptors.AESCBC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +25,7 @@ import java.util.Date;
 import static java.text.DateFormat.getDateTimeInstance;
 import static java.util.Locale.getDefault;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.springframework.util.StringUtils.cleanPath;
 
 @Controller
 public class CryptoController {
@@ -34,10 +35,10 @@ public class CryptoController {
 
     private static final String MESSAGE_ATTR = "message";
     private static final String INDEX_HTML = "index";
-    private final Encryptor encryptor;
+    private final AESCBC aesCbc;
 
-    public CryptoController(Encryptor encryptor) {
-        this.encryptor = encryptor;
+    public CryptoController(AESCBC aesCbc) {
+        this.aesCbc = aesCbc;
     }
 
     @GetMapping("/crypto")
@@ -55,9 +56,9 @@ public class CryptoController {
         var result = "";
 
         if (mode == Cipher.ENCRYPT_MODE) {
-            result = encryptor.encrypt(text);
+            result = aesCbc.encrypt(text);
         } else if (mode == Cipher.DECRYPT_MODE) {
-            result = encryptor.decrypt(text);
+            result = aesCbc.decrypt(text);
         }
 
         model.addAttribute("cryptoResult", result);
@@ -83,15 +84,12 @@ public class CryptoController {
             return INDEX_HTML;
         }
 
-        var fileName = StringUtils.cleanPath(multipartFile.getOriginalFilename());
+        var fileName = cleanPath(multipartFile.getOriginalFilename());
         try {
             Path path = Paths.get(uploadsPath + fileName);
             Files.copy(multipartFile.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-            String fileNameResult = formData.getMode() == 1
-                                    ? "encrypted.txt"
-                                    : "decrypted.txt";
-            encryptor.doCryptoFile(formData.getMode(), new File(uploadsPath + fileName),
-                    new File(uploadsPath + fileNameResult));
+            String fileNameResult = formData.getMode() == 1 ? "encrypted.txt" : "decrypted.txt";
+            aesCbc.doCryptoFile(formData.getMode(), new File(uploadsPath + fileName), new File(uploadsPath + fileNameResult));
 
         } catch (IOException | IllegalBlockSizeException | BadPaddingException e) {
             e.printStackTrace();
@@ -104,6 +102,7 @@ public class CryptoController {
         return redirectUrl;
     }
 }
+
 
 
 

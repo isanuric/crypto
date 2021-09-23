@@ -1,4 +1,4 @@
-package com.impl.crypto;
+package com.impl.crypto.encryptors;
 
 import org.springframework.stereotype.Service;
 
@@ -18,45 +18,37 @@ import java.security.Key;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
-import static java.lang.System.arraycopy;
 import static java.util.Base64.getDecoder;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.springframework.util.Base64Utils.encodeToString;
 
 @Service
-public class Encryptor {
+public class AESCBC {
 
-    private KeystoreFactory keystoreFactory;
+    private static final int CBC_IV_LENGTH = 16;
+    private static final String TRANSFORMATION = "AES/CBC/PKCS5Padding";
 
-    public Encryptor(KeystoreFactory cipher) {
-        this.keystoreFactory = cipher;
+    private final KeystoreFactory keystoreFactory;
+    private final IvUtils ivUtils;
+
+    public AESCBC(KeystoreFactory keystoreFactory, IvUtils ivUtils) {
+        this.keystoreFactory = keystoreFactory;
+        this.ivUtils = ivUtils;
     }
 
     public String encrypt(String message) {
         try {
-            byte[] iv = new byte[16];
-            SecureRandom secureRandom = new SecureRandom();
-            secureRandom.nextBytes(iv);
-
+            Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             final Key key = keystoreFactory.getKey("K2sTgHZ6$rTNmasdDSAfjtu6754$EDFRt5");
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            final byte[] iv = ivUtils.getSecureRandomIV(CBC_IV_LENGTH);
             cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));
             final byte[] encrypted = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
+            return encodeToString(ivUtils.getPayload(iv, encrypted));
 
-            // payload = iv + encrypted
-            final byte[] payload = new byte[iv.length + encrypted.length];
-            arraycopy(iv, 0, payload, 0, iv.length);
-            arraycopy(encrypted, 0, payload, iv.length, encrypted.length);
-            return encodeToString(payload);
-
-        } catch (IllegalBlockSizeException | BadPaddingException | IOException | KeyStoreException |
-                CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException |
-                NoSuchProviderException | NoSuchPaddingException | InvalidKeyException |
-                InvalidAlgorithmParameterException e) {
+        } catch (IllegalBlockSizeException | BadPaddingException | IOException | KeyStoreException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
             e.printStackTrace();
             return "";
         }
@@ -70,34 +62,19 @@ public class Encryptor {
 
         try {
             final byte[] encryptedPayload = getDecoder().decode(encryptedString);
-            final byte[] iv = getIV(encryptedPayload);
-            final byte[] encrypted = getEncrypted(encryptedPayload, iv);
+            final byte[] iv = ivUtils.getIVFromEncryptedPayload(CBC_IV_LENGTH, encryptedPayload);
+            final byte[] encrypted = ivUtils.getEncryptedFromEncryptedPayload(encryptedPayload, iv);
 
             final Key key = keystoreFactory.getKey("K2sTgHZ6$rTNmasdDSAfjtu6754$EDFRt5");
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
             byte[] decrypted = cipher.doFinal(encrypted);
             return new String(decrypted);
 
-        } catch (BadPaddingException | IllegalBlockSizeException | NoSuchPaddingException |
-                UnrecoverableKeyException | InvalidKeyException | InvalidAlgorithmParameterException
-                | NoSuchProviderException | NoSuchAlgorithmException | KeyStoreException |
-                IOException | CertificateException e) {
+        } catch (BadPaddingException | IllegalBlockSizeException | NoSuchPaddingException | UnrecoverableKeyException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchProviderException | NoSuchAlgorithmException | KeyStoreException | IOException | CertificateException e) {
             e.printStackTrace();
             return decryptedText;
         }
-    }
-
-    private byte[] getIV(byte[] encryptedPayload) {
-        byte[] iv = new byte[16];
-        arraycopy(encryptedPayload, 0, iv, 0, iv.length);
-        return iv;
-    }
-
-    private byte[] getEncrypted(byte[] encryptedPayload, byte[] iv) {
-        byte[] encrypted = new byte[encryptedPayload.length - iv.length];
-        arraycopy(encryptedPayload, iv.length, encrypted, 0, encrypted.length);
-        return encrypted;
     }
 
     public void doCryptoFile(int cipherMode, File inputFile, File outputFile)
@@ -118,7 +95,4 @@ public class Encryptor {
     }
 
 }
-
-
-
 

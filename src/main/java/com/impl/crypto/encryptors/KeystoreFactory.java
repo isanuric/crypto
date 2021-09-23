@@ -1,4 +1,4 @@
-package com.impl.crypto;
+package com.impl.crypto.encryptors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
