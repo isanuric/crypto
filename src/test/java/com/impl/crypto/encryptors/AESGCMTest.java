@@ -1,7 +1,11 @@
 package com.impl.crypto.encryptors;
 
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.io.File;
+import java.io.FileInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -12,8 +16,18 @@ class AESGCMTest extends BaseTest {
 
     @RepeatedTest(1)
     void encryptMessageKeystore() throws Exception {
-        String plainText = "Started AES_GCMTest in 1.714 seconds (JVM running for 2.745)";
+        String plainText = "Initializing Spring embedded WebApplicationContext";
         assertEquals(plainText, aesGcm.decrypt(aesGcm.encrypt(plainText)));
+    }
+
+    @Test
+    void doCryptoFile() throws Exception {
+        aesGcm.encryptFile(new File("src/main/resources/files/inputFile.txt"));
+        aesGcm.decryptFile(new File("src/main/resources/files/encrypted_inputFile.txt"));
+
+        assertEquals(
+                new FileInputStream("src/main/resources/files/inputFile.txt").read(),
+                new FileInputStream("src/main/resources/files/decrypted_encrypted_inputFile.txt").read());
     }
 
 }

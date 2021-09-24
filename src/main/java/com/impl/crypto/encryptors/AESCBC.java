@@ -62,8 +62,8 @@ public class AESCBC {
 
         try {
             final byte[] encryptedPayload = getDecoder().decode(encryptedString);
-            final byte[] iv = ivUtils.getIVFromEncryptedPayload(CBC_IV_LENGTH, encryptedPayload);
-            final byte[] encrypted = ivUtils.getEncryptedFromEncryptedPayload(encryptedPayload, iv);
+            final byte[] iv = ivUtils.getIVPartFromPayload(CBC_IV_LENGTH, encryptedPayload);
+            final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(encryptedPayload, iv);
 
             final Key key = keystoreFactory.getKey("K2sTgHZ6$rTNmasdDSAfjtu6754$EDFRt5");
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
