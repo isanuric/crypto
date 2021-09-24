@@ -61,11 +61,12 @@ public class KeystoreFactory {
             keystore.load(keystoreStream, password.toCharArray());
         }
 
-        if (!keystore.containsAlias("test")) {
+        final String alias = "test00";
+        if (!keystore.containsAlias(alias)) {
             throw new KeyStoreException("Alias for key not found");
         }
 
-        return keystore.getKey("test", password.toCharArray());
+        return keystore.getKey(alias, password.toCharArray());
     }
 }
 
