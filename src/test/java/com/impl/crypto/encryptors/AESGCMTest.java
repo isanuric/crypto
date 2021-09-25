@@ -1,7 +1,6 @@
 package com.impl.crypto.encryptors;
 
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
@@ -21,14 +20,14 @@ class AESGCMTest extends BaseTest {
         assertEquals(plainText, aesGcm.decrypt(encrypted, keystorePassword));
     }
 
-    @Test
+    @RepeatedTest(1)
     void doCryptoFile() throws Exception {
         aesGcm.encryptFile(new File("src/main/resources/files/inputFile.txt"), keystorePassword);
         aesGcm.decryptFile(new File("src/main/resources/files/encrypted_inputFile.txt"), keystorePassword);
 
         assertEquals(
                 new FileInputStream("src/main/resources/files/inputFile.txt").read(),
-                new FileInputStream("src/main/resources/files/decrypted_encrypted_inputFile.txt").read());
+                new FileInputStream("src/main/resources/files/decrypt_encrypted_inputFile.txt").read());
     }
 
 }

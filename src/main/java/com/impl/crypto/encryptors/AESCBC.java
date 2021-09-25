@@ -22,6 +22,7 @@ import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
+import static com.impl.crypto.encryptors.Crypto.Transition;
 import static java.util.Base64.getDecoder;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.springframework.util.Base64Utils.encodeToString;
@@ -32,10 +33,12 @@ public class AESCBC {
     private static final int CBC_IV_LENGTH = 16;
     private static final String AES_CBC = "AES/CBC/PKCS5Padding";
 
+    private Crypto crypto;
     private final KeystoreFactory keystoreFactory;
     private final IvUtils ivUtils;
 
-    public AESCBC(KeystoreFactory keystoreFactory, IvUtils ivUtils) {
+    public AESCBC(Crypto crypto, KeystoreFactory keystoreFactory, IvUtils ivUtils) {
+        this.crypto = crypto;
         this.keystoreFactory = keystoreFactory;
         this.ivUtils = ivUtils;
     }
@@ -78,38 +81,6 @@ public class AESCBC {
         }
     }
 
-    public void decryptFile(File inputFile, String password)
-            throws IOException, IllegalBlockSizeException, BadPaddingException,
-                   NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
-                   CertificateException, KeyStoreException, NoSuchProviderException,
-                   InvalidAlgorithmParameterException, InvalidKeyException {
-
-        try (FileInputStream inputStream = new FileInputStream(inputFile)) {
-            byte[] inputBytes = new byte[(int) inputFile.length()];
-            inputStream.read(inputBytes);
-
-            try (FileOutputStream outputStream = new FileOutputStream(inputFile.getParentFile() + "/decrypt_" + inputFile.getName())) {
-                final byte[] iv = ivUtils.getIVPartFromPayload(16, inputBytes);
-                final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(inputBytes, iv);
-                byte[] decrypted = doDecryption(encrypted, iv, password);
-                outputStream.write(decrypted);
-            }
-        }
-    }
-
-    private byte[] doDecryption(byte[] encrypted, byte[] iv, String password)
-            throws NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
-                   CertificateException, IOException, KeyStoreException, NoSuchProviderException,
-                   InvalidAlgorithmParameterException, InvalidKeyException,
-                   IllegalBlockSizeException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance(AES_CBC);
-        cipher.init(
-                Cipher.DECRYPT_MODE,
-                keystoreFactory.getKey(password),
-                new IvParameterSpec(iv));
-        return cipher.doFinal(encrypted);
-    }
-
     public void encryptFile(File inputFile, String password)
             throws IOException, IllegalBlockSizeException, BadPaddingException,
                    NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
@@ -135,6 +106,26 @@ public class AESCBC {
         }
     }
 
+    public void decryptFile(File inputFile, String password)
+            throws IOException, IllegalBlockSizeException, BadPaddingException,
+                   NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
+                   CertificateException, KeyStoreException, NoSuchProviderException,
+                   InvalidAlgorithmParameterException, InvalidKeyException {
+
+        try (FileInputStream inputStream = new FileInputStream(inputFile)) {
+            byte[] inputBytes = new byte[(int) inputFile.length()];
+            inputStream.read(inputBytes);
+
+            try (FileOutputStream outputStream = new FileOutputStream(inputFile.getParentFile() + "/decrypt_" + inputFile.getName())) {
+                final byte[] iv = ivUtils.getIVPartFromPayload(16, inputBytes);
+                final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(inputBytes, iv);
+                byte[] decrypted = this.crypto.doDecryption(encrypted, iv, password, Transition.AES_CBC);
+                outputStream.write(decrypted);
+            }
+        }
+    }
+
 }
+
 
 

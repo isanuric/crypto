@@ -21,6 +21,7 @@ import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
+import static com.impl.crypto.encryptors.Crypto.Transition;
 import static java.util.Base64.getDecoder;
 import static org.springframework.util.Base64Utils.encodeToString;
 
@@ -31,10 +32,12 @@ public class AESGCM {
     private static final int GCM_TAG_LENGTH = 16;
     public static final String AES_GCM = "AES/GCM/NoPadding";
 
+    private Crypto crypto;
     private KeystoreFactory keystoreFactory;
     private IvUtils ivUtils;
 
-    public AESGCM(KeystoreFactory keystoreFactory, IvUtils ivUtils) {
+    public AESGCM(Crypto crypto, KeystoreFactory keystoreFactory, IvUtils ivUtils) {
+        this.crypto = crypto;
         this.keystoreFactory = keystoreFactory;
         this.ivUtils = ivUtils;
     }
@@ -65,7 +68,8 @@ public class AESGCM {
         final byte[] encryptedPayload = getDecoder().decode(cipherText);
         final byte[] iv = ivUtils.getIVPartFromPayload(GCM_IV_LENGTH, encryptedPayload);
         final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(encryptedPayload, iv);
-        final byte[] decrypted = doDecryption(encrypted, iv, password);
+        byte[] decrypted = crypto.doDecryption(encrypted, iv, password, Transition.AES_GCM);
+
         return new String(decrypted);
     }
 
@@ -107,24 +111,10 @@ public class AESGCM {
             try (FileOutputStream outputStream = new FileOutputStream(inputFile.getParentFile() + "/decrypt_" + inputFile.getName())) {
                 final byte[] iv = ivUtils.getIVPartFromPayload(GCM_IV_LENGTH, inputBytes);
                 final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(inputBytes, iv);
-                byte[] decrypted = doDecryption(encrypted, iv, password);
+                byte[] decrypted = crypto.doDecryption(encrypted, iv, password, Transition.AES_GCM);
                 outputStream.write(decrypted);
             }
         }
-    }
-
-    private byte[] doDecryption(byte[] encrypted, final byte[] iv, String password)
-            throws NoSuchAlgorithmException, NoSuchPaddingException, IOException, KeyStoreException,
-                   CertificateException, UnrecoverableKeyException, NoSuchProviderException,
-                   InvalidKeyException, InvalidAlgorithmParameterException,
-                   IllegalBlockSizeException, BadPaddingException {
-
-        Cipher cipher = Cipher.getInstance(AES_GCM);
-        cipher.init(
-                Cipher.DECRYPT_MODE,
-                keystoreFactory.getKey(password),
-                new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv));
-        return cipher.doFinal(encrypted);
     }
 
 }
