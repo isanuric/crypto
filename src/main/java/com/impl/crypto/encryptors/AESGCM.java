@@ -63,31 +63,32 @@ public class AESGCM {
                    IllegalBlockSizeException, BadPaddingException {
 
         final byte[] encryptedPayload = getDecoder().decode(cipherText);
-        final byte[] decrypted = decryptBytes(encryptedPayload, password);
+        final byte[] iv = ivUtils.getIVPartFromPayload(GCM_IV_LENGTH, encryptedPayload);
+        final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(encryptedPayload, iv);
+        final byte[] decrypted = doDecryption(encrypted, iv, password);
         return new String(decrypted);
     }
 
-    public void encryptFile(File inputFile)
+    public void encryptFile(File inputFile, String password)
             throws IOException, IllegalBlockSizeException, BadPaddingException,
                    UnrecoverableKeyException, CertificateException, KeyStoreException,
                    NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
         Cipher cipher = Cipher.getInstance(AES_GCM);
-        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKey("K2sTgHZ6$rTNmasdDSAfjtu6754$EDFRt5");
-
         byte[] iv = ivUtils.getSecureRandomIV(GCM_IV_LENGTH);
         GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
+        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKey(password);
         cipher.init(Cipher.ENCRYPT_MODE, key, gcmParameterSpec);
+
         try (FileInputStream inputStream = new FileInputStream(inputFile)) {
             byte[] inputBytes = new byte[(int) inputFile.length()];
             inputStream.read(inputBytes);
             byte[] outputBytes = cipher.doFinal(inputBytes);
-            final byte[] payload = ivUtils.getPayload(iv, outputBytes);
 
-            final File parentFile = inputFile.getParentFile();
-            final String fileName = inputFile.getName();
-            try (FileOutputStream outputStream = new FileOutputStream(parentFile + "/encrypted_" + fileName)) {
+            try (FileOutputStream outputStream = new FileOutputStream(
+                    inputFile.getParentFile() + "/encrypted_" + inputFile.getName())) {
+                final byte[] payload = ivUtils.getPayload(iv, outputBytes);
                 outputStream.write(payload);
             }
         }
@@ -103,33 +104,31 @@ public class AESGCM {
             byte[] inputBytes = new byte[(int) inputFile.length()];
             inputStream.read(inputBytes);
 
-            byte[] decrypted = decryptBytes(inputBytes, password);
-            try (FileOutputStream outputStream = new FileOutputStream(
-                            inputFile.getParentFile() + "/decrypt_" + inputFile.getName())) {
+            try (FileOutputStream outputStream = new FileOutputStream(inputFile.getParentFile() + "/decrypt_" + inputFile.getName())) {
+                final byte[] iv = ivUtils.getIVPartFromPayload(GCM_IV_LENGTH, inputBytes);
+                final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(inputBytes, iv);
+                byte[] decrypted = doDecryption(encrypted, iv, password);
                 outputStream.write(decrypted);
             }
         }
     }
 
-    private byte[] decryptBytes(byte[] inputBytes, String password)
+    private byte[] doDecryption(byte[] encrypted, final byte[] iv, String password)
             throws NoSuchAlgorithmException, NoSuchPaddingException, IOException, KeyStoreException,
                    CertificateException, UnrecoverableKeyException, NoSuchProviderException,
                    InvalidKeyException, InvalidAlgorithmParameterException,
                    IllegalBlockSizeException, BadPaddingException {
 
         Cipher cipher = Cipher.getInstance(AES_GCM);
-        final byte[] iv = ivUtils.getIVPartFromPayload(GCM_IV_LENGTH, inputBytes);
-
         cipher.init(
                 Cipher.DECRYPT_MODE,
                 keystoreFactory.getKey(password),
                 new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv));
-
-        final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(inputBytes, iv);
         return cipher.doFinal(encrypted);
     }
 
 }
+
 
 
 

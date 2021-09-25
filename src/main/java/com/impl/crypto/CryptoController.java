@@ -13,12 +13,20 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.text.DateFormat;
 import java.util.Date;
 
@@ -56,9 +64,9 @@ public class CryptoController {
         var result = "";
 
         if (mode == Cipher.ENCRYPT_MODE) {
-            result = aesCbc.encrypt(text);
+            result = aesCbc.encrypt(text, "");
         } else if (mode == Cipher.DECRYPT_MODE) {
-            result = aesCbc.decrypt(text);
+            result = aesCbc.decrypt(text, "");
         }
 
         model.addAttribute("cryptoResult", result);
@@ -88,10 +96,9 @@ public class CryptoController {
         try {
             Path path = Paths.get(uploadsPath + fileName);
             Files.copy(multipartFile.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-            String fileNameResult = formData.getMode() == 1 ? "encrypted.txt" : "decrypted.txt";
-            aesCbc.doCryptoFile(formData.getMode(), new File(uploadsPath + fileName), new File(uploadsPath + fileNameResult));
+            aesCbc.encryptFile(new File(uploadsPath + fileName), "2LS4U!%GcSr$qpV$43k%");
 
-        } catch (IOException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (IOException | IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException | NoSuchAlgorithmException | UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchProviderException | InvalidAlgorithmParameterException | InvalidKeyException e) {
             e.printStackTrace();
             model.addAttribute(MESSAGE_ATTR,
                     "Can not execute cryptography process: " + e.getMessage());

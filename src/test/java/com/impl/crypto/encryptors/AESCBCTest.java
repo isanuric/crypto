@@ -1,11 +1,9 @@
 package com.impl.crypto.encryptors;
 
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import javax.crypto.Cipher;
 import java.io.File;
 import java.io.FileInputStream;
 
@@ -20,27 +18,28 @@ class AESCBCTest extends BaseTest {
     @RepeatedTest(1)
     void encryptMessageKeystore() {
         String plainText = "Initializing Spring embedded WebApplicationContext";
-        String encrypted = aesCbc.encrypt(plainText);
-        String decrypted = aesCbc.decrypt(encrypted);
+        String encrypted = aesCbc.encrypt(plainText, keystorePassword);
+        String decrypted = aesCbc.decrypt(encrypted, keystorePassword);
         assertEquals(plainText, decrypted);
     }
 
-    @Test
+    @RepeatedTest(1)
     void doCryptoFile() throws Exception {
-        aesCbc.doCryptoFile(Cipher.ENCRYPT_MODE,
+        aesCbc.encryptFile(
                 new File("src/main/resources/files/inputFile.txt"),
-                new File("src/main/resources/files/outputFile.txt"));
+                keystorePassword);
 
-        aesCbc.doCryptoFile(Cipher.DECRYPT_MODE,
-                new File("src/main/resources/files/outputFile.txt"),
-                new File("src/main/resources/files/decrypted.txt"));
+        aesCbc.decryptFile(
+                new File("src/main/resources/files/encrypted_cbc_inputFile.txt"),
+                keystorePassword);
 
         assertEquals(
                 new FileInputStream("src/main/resources/files/inputFile.txt").read(),
-                new FileInputStream("src/main/resources/files/decrypted.txt").read());
+                new FileInputStream("src/main/resources/files/decrypt_encrypted_cbc_inputFile.txt").read());
     }
 
 }
+
 
 
 

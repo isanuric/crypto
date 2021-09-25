@@ -17,22 +17,14 @@ class AESGCMTest extends BaseTest {
     @RepeatedTest(1)
     void encryptMessageKeystore() throws Exception {
         String plainText = "Initializing Spring embedded WebApplicationContext";
-        final String encrypted = aesGcm.encrypt(
-                plainText,
-                "fVD5y2*ZNK3K8nD#jgvoLbjVpW9bQpS4U!%GcSr$qpV$4z3k%Vcc$U$N!YF#j#MoGbP%M");
-        assertEquals(
-                plainText,
-                aesGcm.decrypt(
-                        encrypted,
-                "fVD5y2*ZNK3K8nD#jgvoLbjVpW9bQpS4U!%GcSr$qpV$4z3k%Vcc$U$N!YF#j#MoGbP%M"));
+        final String encrypted = aesGcm.encrypt(plainText, keystorePassword);
+        assertEquals(plainText, aesGcm.decrypt(encrypted, keystorePassword));
     }
 
     @Test
     void doCryptoFile() throws Exception {
-        aesGcm.encryptFile(new File("src/main/resources/files/inputFile.txt"));
-        aesGcm.decryptFile(
-                new File("src/main/resources/files/encrypted_inputFile.txt"),
-                "fVD5y2*ZNK3K8nD#jgvoLbjVpW9bQpS4U!%GcSr$qpV$4z3k%Vcc$U$N!YF#j#MoGbP%M");
+        aesGcm.encryptFile(new File("src/main/resources/files/inputFile.txt"), keystorePassword);
+        aesGcm.decryptFile(new File("src/main/resources/files/encrypted_inputFile.txt"), keystorePassword);
 
         assertEquals(
                 new FileInputStream("src/main/resources/files/inputFile.txt").read(),
@@ -40,3 +32,4 @@ class AESGCMTest extends BaseTest {
     }
 
 }
+
