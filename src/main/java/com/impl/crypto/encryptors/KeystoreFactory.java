@@ -1,73 +1,64 @@
 package com.impl.crypto.encryptors;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.SecretKey;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
+import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
 @Service
 public class KeystoreFactory {
 
-    @Value("${keystore.path}")
+    @Value("${keystore.p12.path}")
     private String keystorePath;
 
-    Cipher getCipher(int cipherMode) {
-        SecretKeySpec secretKeySpecification;
-        final byte[] key;
-        Cipher cipher = null;
-        try {
-            key = getKey("K2sTgHZ6$rTNmasdDSAfjtu6754$EDFRt5").getEncoded();
-            secretKeySpecification = new SecretKeySpec(key, "AES");
-            cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+    @Value("${keystore.chacha.path}")
+    private String keystoreChachaPath;
 
-            // Save the IV bytes or send it in plaintext with the encrypted data so you can decrypt the data later
-            byte[] iv = new byte[16];
-            if (cipherMode == 1) {
-                SecureRandom secureRandom = new SecureRandom();
-                secureRandom.nextBytes(iv);
+    Key getKeyPKCS12(String password)
+            throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException,
+                   UnrecoverableKeyException {
+        try (InputStream keystoreStream = new FileInputStream(keystorePath)) {
+            KeyStore keystore = KeyStore.getInstance("PKCS12");
+            keystore.load(keystoreStream, password.toCharArray());
+
+            final String alias = "test00";
+            if (!keystore.containsAlias(alias)) {
+                throw new KeyStoreException("Alias for key not found");
             }
-            cipher.init(cipherMode, secretKeySpecification, new IvParameterSpec(iv));
 
-        } catch (NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException |
-                NoSuchAlgorithmException | UnrecoverableKeyException | CertificateException |
-                IOException | KeyStoreException | NoSuchProviderException e) {
-            e.printStackTrace();
+            return keystore.getKey(alias, password.toCharArray());
         }
-        return cipher;
     }
 
-    Key getKey(String password)
+    SecretKey getKeyBKS(String password)
             throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException,
-                   UnrecoverableKeyException, NoSuchProviderException {
-        KeyStore keystore;
-        try (InputStream keystoreStream = new FileInputStream(keystorePath)) {
-            keystore = KeyStore.getInstance("PKCS12", "SUN");
+                   UnrecoverableKeyException {
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
+        try (InputStream keystoreStream = new FileInputStream(keystoreChachaPath)) {
+
+            KeyStore keystore = KeyStore.getInstance("BKS");
             keystore.load(keystoreStream, password.toCharArray());
-        }
 
-        final String alias = "test00";
-        if (!keystore.containsAlias(alias)) {
-            throw new KeyStoreException("Alias for key not found");
-        }
+            final String alias = "chacha";
+            if (!keystore.containsAlias(alias)) {
+                throw new KeyStoreException("Alias for key not found");
+            }
 
-        return keystore.getKey(alias, password.toCharArray());
+            return (SecretKey) keystore.getKey(alias, "qayXSW321".toCharArray());
+        }
     }
 }
+
 
 

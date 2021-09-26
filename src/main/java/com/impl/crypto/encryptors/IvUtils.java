@@ -40,7 +40,7 @@ public class IvUtils {
         return payload;
     }
 
-     byte[] getIVPartFromPayload(final int ivLength, byte[] encryptedPayload) {
+     byte[] getIVPartFromPayload(byte[] encryptedPayload, final int ivLength) {
         byte[] iv = new byte[ivLength];
         arraycopy(encryptedPayload, 0, iv, 0, iv.length);
         return iv;

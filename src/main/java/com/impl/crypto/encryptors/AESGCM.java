@@ -17,11 +17,11 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
 import static com.impl.crypto.encryptors.Crypto.Transition;
+import static com.impl.crypto.encryptors.Crypto.Transition.AES_GCM;
 import static java.util.Base64.getDecoder;
 import static org.springframework.util.Base64Utils.encodeToString;
 
@@ -30,7 +30,6 @@ public class AESGCM {
 
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 16;
-    public static final String AES_GCM = "AES/GCM/NoPadding";
 
     private Crypto crypto;
     private KeystoreFactory keystoreFactory;
@@ -44,14 +43,14 @@ public class AESGCM {
 
     public String encrypt(String plaintext, String password)
             throws NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
-                   CertificateException, IOException, KeyStoreException, NoSuchProviderException,
+                   CertificateException, IOException, KeyStoreException,
                    IllegalBlockSizeException, BadPaddingException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
+        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
         byte[] iv = ivUtils.getSecureRandomIV(GCM_IV_LENGTH);
-        Cipher cipher = Cipher.getInstance(AES_GCM);
-        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKey(password);
 
+        Cipher cipher = Cipher.getInstance(AES_GCM.value);
         GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
         cipher.init(Cipher.ENCRYPT_MODE, key, gcmParameterSpec);
         final byte[] encrypted = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
@@ -61,14 +60,18 @@ public class AESGCM {
 
     public String decrypt(String cipherText, String password)
             throws NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
-                   CertificateException, IOException, KeyStoreException, NoSuchProviderException,
+                   CertificateException, IOException, KeyStoreException,
                    InvalidAlgorithmParameterException, InvalidKeyException,
                    IllegalBlockSizeException, BadPaddingException {
 
         final byte[] encryptedPayload = getDecoder().decode(cipherText);
-        final byte[] iv = ivUtils.getIVPartFromPayload(GCM_IV_LENGTH, encryptedPayload);
+        final byte[] iv = ivUtils.getIVPartFromPayload(encryptedPayload, GCM_IV_LENGTH);
         final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(encryptedPayload, iv);
-        byte[] decrypted = crypto.doDecryption(encrypted, iv, password, Transition.AES_GCM);
+        byte[] decrypted = crypto.doDecryption(
+                encrypted,
+                keystoreFactory.getKeyPKCS12(password),
+                Transition.AES_GCM.value,
+                new GCMParameterSpec(16 * 8, iv));
 
         return new String(decrypted);
     }
@@ -76,13 +79,13 @@ public class AESGCM {
     public void encryptFile(File inputFile, String password)
             throws IOException, IllegalBlockSizeException, BadPaddingException,
                    UnrecoverableKeyException, CertificateException, KeyStoreException,
-                   NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException,
+                   NoSuchAlgorithmException, NoSuchPaddingException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
-        Cipher cipher = Cipher.getInstance(AES_GCM);
+        Cipher cipher = Cipher.getInstance(AES_GCM.value);
         byte[] iv = ivUtils.getSecureRandomIV(GCM_IV_LENGTH);
         GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
-        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKey(password);
+        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
         cipher.init(Cipher.ENCRYPT_MODE, key, gcmParameterSpec);
 
         try (FileInputStream inputStream = new FileInputStream(inputFile)) {
@@ -101,7 +104,7 @@ public class AESGCM {
     public void decryptFile(File inputFile, String password)
             throws IOException, IllegalBlockSizeException, BadPaddingException,
                    NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
-                   CertificateException, KeyStoreException, NoSuchProviderException,
+                   CertificateException, KeyStoreException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
         try (FileInputStream inputStream = new FileInputStream(inputFile)) {
@@ -109,15 +112,20 @@ public class AESGCM {
             inputStream.read(inputBytes);
 
             try (FileOutputStream outputStream = new FileOutputStream(inputFile.getParentFile() + "/decrypt_" + inputFile.getName())) {
-                final byte[] iv = ivUtils.getIVPartFromPayload(GCM_IV_LENGTH, inputBytes);
+                final byte[] iv = ivUtils.getIVPartFromPayload(inputBytes, GCM_IV_LENGTH);
                 final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(inputBytes, iv);
-                byte[] decrypted = crypto.doDecryption(encrypted, iv, password, Transition.AES_GCM);
+                byte[] decrypted = crypto.doDecryption(
+                        encrypted,
+                        keystoreFactory.getKeyPKCS12(password),
+                        Transition.AES_GCM.value,
+                        new GCMParameterSpec(16 * 8, iv));
                 outputStream.write(decrypted);
             }
         }
     }
 
 }
+
 
 
 

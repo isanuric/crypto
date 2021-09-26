@@ -48,7 +48,12 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.69</version>
+        </dependency>
+    </dependencies>
 
 	<build>
 		<plugins>
@@ -114,38 +119,7 @@
 				<repackage.classifier>exec</repackage.classifier>
 				<native-buildtools.version>0.9.3</native-buildtools.version>
 			</properties>
-			<dependencies>
-				<dependency>
-					<groupId>org.graalvm.buildtools</groupId>
-					<artifactId>junit-platform-native</artifactId>
-					<version>${native-buildtools.version}</version>
-					<scope>test</scope>
-				</dependency>
-			</dependencies>
 			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.graalvm.buildtools</groupId>
-						<artifactId>native-maven-plugin</artifactId>
-						<version>${native-buildtools.version}</version>
-						<executions>
-							<execution>
-								<id>test-native</id>
-								<phase>test</phase>
-								<goals>
-									<goal>test</goal>
-								</goals>
-							</execution>
-							<execution>
-								<id>build-native</id>
-								<phase>package</phase>
-								<goals>
-									<goal>build</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
 			</build>
 		</profile>
 	</profiles>
