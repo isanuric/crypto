@@ -54,7 +54,7 @@ public class AESGCM {
         GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
         cipher.init(Cipher.ENCRYPT_MODE, key, gcmParameterSpec);
         final byte[] encrypted = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
-        return encodeToString(ivUtils.getPayload(iv, encrypted));
+        return encodeToString(ivUtils.getFinalEncrypted(encrypted, iv));
 
     }
 
@@ -65,8 +65,8 @@ public class AESGCM {
                    IllegalBlockSizeException, BadPaddingException {
 
         final byte[] encryptedPayload = getDecoder().decode(cipherText);
-        final byte[] iv = ivUtils.getIVPartFromPayload(encryptedPayload, GCM_IV_LENGTH);
-        final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(encryptedPayload, iv);
+        final byte[] iv = ivUtils.getIVPartFromFram(encryptedPayload, GCM_IV_LENGTH);
+        final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(encryptedPayload, iv);
         byte[] decrypted = crypto.doDecryption(
                 encrypted,
                 keystoreFactory.getKeyPKCS12(password),
@@ -82,23 +82,14 @@ public class AESGCM {
                    NoSuchAlgorithmException, NoSuchPaddingException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
-        Cipher cipher = Cipher.getInstance(AES_GCM.value);
         byte[] iv = ivUtils.getSecureRandomIV(GCM_IV_LENGTH);
-        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
         final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
+
+        Cipher cipher = Cipher.getInstance(AES_GCM.value);
+        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
         cipher.init(Cipher.ENCRYPT_MODE, key, gcmParameterSpec);
 
-        try (FileInputStream inputStream = new FileInputStream(inputFile)) {
-            byte[] inputBytes = new byte[(int) inputFile.length()];
-            inputStream.read(inputBytes);
-            byte[] outputBytes = cipher.doFinal(inputBytes);
-
-            try (FileOutputStream outputStream = new FileOutputStream(
-                    inputFile.getParentFile() + "/encrypted_" + inputFile.getName())) {
-                final byte[] payload = ivUtils.getPayload(iv, outputBytes);
-                outputStream.write(payload);
-            }
-        }
+        crypto.encryptionFile(inputFile, cipher, iv);
     }
 
     public void decryptFile(File inputFile, String password)
@@ -112,8 +103,8 @@ public class AESGCM {
             inputStream.read(inputBytes);
 
             try (FileOutputStream outputStream = new FileOutputStream(inputFile.getParentFile() + "/decrypt_" + inputFile.getName())) {
-                final byte[] iv = ivUtils.getIVPartFromPayload(inputBytes, GCM_IV_LENGTH);
-                final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(inputBytes, iv);
+                final byte[] iv = ivUtils.getIVPartFromFram(inputBytes, GCM_IV_LENGTH);
+                final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(inputBytes, iv);
                 byte[] decrypted = crypto.doDecryption(
                         encrypted,
                         keystoreFactory.getKeyPKCS12(password),
@@ -125,6 +116,7 @@ public class AESGCM {
     }
 
 }
+
 
 
 

@@ -24,7 +24,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.text.DateFormat;
@@ -98,7 +97,7 @@ public class CryptoController {
             Files.copy(multipartFile.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
             aesCbc.encryptFile(new File(uploadsPath + fileName), "2LS4U!%GcSr$qpV$43k%");
 
-        } catch (IOException | IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException | NoSuchAlgorithmException | UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchProviderException | InvalidAlgorithmParameterException | InvalidKeyException e) {
+        } catch (IOException | IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException | NoSuchAlgorithmException | UnrecoverableKeyException | CertificateException | KeyStoreException | InvalidAlgorithmParameterException | InvalidKeyException e) {
             e.printStackTrace();
             model.addAttribute(MESSAGE_ATTR,
                     "Can not execute cryptography process: " + e.getMessage());

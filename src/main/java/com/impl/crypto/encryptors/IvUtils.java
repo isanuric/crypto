@@ -12,41 +12,49 @@ import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 @Component
 public class IvUtils {
 
-     byte[] getSecureRandomIV(final int ivLength) {
+    public static final String PERSONALIZATION_STRING = "dfkTERW54fdkGHGH78)fgfFLufg$/HÜQAvcdgzZT";
+
+    byte[] getSecureRandomIV(final int ivLength) {
         byte[] iv = new byte[ivLength];
-        SecureRandom drbgSecureRandom;
+        SecureRandom secureRandom = getSecureRandom();
+        secureRandom.nextBytes(iv);
+        return iv;
+    }
+
+    SecureRandom getSecureRandom() {
+        SecureRandom secureRandom = null;
         try {
-            drbgSecureRandom = SecureRandom.getInstance(
+            secureRandom = SecureRandom.getInstance(
                     "DRBG",
                     DrbgParameters.instantiation(
                             256,
+                            // Periodically reseed to avoid too many outputs from a single seed.
                             PR_AND_RESEED,
-                            "dfkTERW54fdkGHGH78)fgfFLufg$/HÜQAvcdgzZTEJKLQD5847fdsf%tD".getBytes())
+                            PERSONALIZATION_STRING.getBytes())
             );
-            drbgSecureRandom.nextBytes(iv);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
-        return iv;
+        return secureRandom;
     }
 
     /**
      * payload = (iv + encrypted)
      */
-     byte[] getPayload(byte[] iv, byte[] encrypted) {
+    byte[] getFinalEncrypted(byte[] encrypted, byte[] iv) {
         final byte[] payload = new byte[iv.length + encrypted.length];
         arraycopy(iv, 0, payload, 0, iv.length);
         arraycopy(encrypted, 0, payload, iv.length, encrypted.length);
         return payload;
     }
 
-     byte[] getIVPartFromPayload(byte[] encryptedPayload, final int ivLength) {
+    byte[] getIVPartFromFram(byte[] encryptedPayload, final int ivLength) {
         byte[] iv = new byte[ivLength];
         arraycopy(encryptedPayload, 0, iv, 0, iv.length);
         return iv;
     }
 
-     byte[] getEncryptedPartFromPayload(byte[] encryptedPayload, byte[] iv) {
+    byte[] getEncryptedPartFromFrame(byte[] encryptedPayload, byte[] iv) {
         byte[] encrypted = new byte[encryptedPayload.length - iv.length];
         arraycopy(encryptedPayload, iv.length, encrypted, 0, encrypted.length);
         return encrypted;

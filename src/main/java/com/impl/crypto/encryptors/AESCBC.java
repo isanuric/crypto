@@ -18,7 +18,6 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
@@ -47,9 +46,9 @@ public class AESCBC {
             Cipher cipher = Cipher.getInstance(AES_CBC.value);
             final Key key = keystoreFactory.getKeyPKCS12(password);
             final byte[] iv = ivUtils.getSecureRandomIV(CBC_IV_LENGTH);
-            cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));
+            cipher.init(Cipher.ENCRYPT_MODE, key, getIvParameterSpec(iv));
             final byte[] encrypted = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
-            return encodeToString(ivUtils.getPayload(iv, encrypted));
+            return encodeToString(ivUtils.getFinalEncrypted(encrypted, iv));
 
         } catch (IllegalBlockSizeException | BadPaddingException | IOException | KeyStoreException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
             e.printStackTrace();
@@ -65,12 +64,12 @@ public class AESCBC {
 
         try {
             final byte[] encryptedPayload = getDecoder().decode(encryptedString);
-            final byte[] iv = ivUtils.getIVPartFromPayload(encryptedPayload, CBC_IV_LENGTH);
-            final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(encryptedPayload, iv);
+            final byte[] iv = ivUtils.getIVPartFromFram(encryptedPayload, CBC_IV_LENGTH);
+            final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(encryptedPayload, iv);
 
             final Key key = keystoreFactory.getKeyPKCS12(password);
             Cipher cipher = Cipher.getInstance(AES_CBC.value);
-            cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
+            cipher.init(Cipher.DECRYPT_MODE, key, getIvParameterSpec(iv));
             byte[] decrypted = cipher.doFinal(encrypted);
             return new String(decrypted);
 
@@ -83,55 +82,46 @@ public class AESCBC {
     public void encryptFile(File inputFile, String password)
             throws IOException, IllegalBlockSizeException, BadPaddingException,
                    NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
-                   CertificateException, KeyStoreException, NoSuchProviderException,
+                   CertificateException, KeyStoreException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
-        Cipher cipher = Cipher.getInstance(AES_CBC.value);
-        final byte[] key = keystoreFactory.getKeyPKCS12(password).getEncoded();
-        SecretKeySpec secretKeySpecification = new SecretKeySpec(key, "AES");
+        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
         final byte[] iv = ivUtils.getSecureRandomIV(16);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpecification, new IvParameterSpec(iv));
 
-        try (FileInputStream inputStream = new FileInputStream(inputFile)) {
-            byte[] inputBytes = new byte[(int) inputFile.length()];
-            inputStream.read(inputBytes);
-            byte[] outputBytes = cipher.doFinal(inputBytes);
+        Cipher cipher = Cipher.getInstance(AES_CBC.value);
+        cipher.init(Cipher.ENCRYPT_MODE, key,  getIvParameterSpec(iv));
 
-            try (FileOutputStream outputStream = new FileOutputStream(
-                    inputFile.getParentFile() + "/encrypted_cbc_" + inputFile.getName())) {
-                final byte[] payload = ivUtils.getPayload(iv, outputBytes);
-                outputStream.write(payload);
-            }
-        }
+        crypto.encryptionFile(inputFile, cipher, iv);
     }
 
     public void decryptFile(File inputFile, String password)
             throws IOException, IllegalBlockSizeException, BadPaddingException,
                    NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
-                   CertificateException, KeyStoreException, NoSuchProviderException,
+                   CertificateException, KeyStoreException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
+        byte[] inputBytes = new byte[(int) inputFile.length()];
+        final byte[] iv = ivUtils.getIVPartFromFram(inputBytes, 16);
+        final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(inputBytes, iv);
+
         try (FileInputStream inputStream = new FileInputStream(inputFile)) {
-            byte[] inputBytes = new byte[(int) inputFile.length()];
             inputStream.read(inputBytes);
 
             try (FileOutputStream outputStream = new FileOutputStream(inputFile.getParentFile() + "/decrypt_" + inputFile.getName())) {
-                final byte[] iv = ivUtils.getIVPartFromPayload(inputBytes, 16);
-                final byte[] encrypted = ivUtils.getEncryptedPartFromPayload(inputBytes, iv);
 
                 byte[] decrypted = this.crypto.doDecryption(
                         encrypted,
                         keystoreFactory.getKeyPKCS12(password),
                         AES_CBC.value,
-                        new IvParameterSpec(iv));
+                        getIvParameterSpec(iv));
 
                 outputStream.write(decrypted);
             }
         }
     }
 
+    private IvParameterSpec getIvParameterSpec(byte[] iv) {
+        return new IvParameterSpec(iv);
+    }
+
 }
-
-
-
-
