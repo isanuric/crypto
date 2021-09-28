@@ -14,7 +14,7 @@ public class IvUtils {
 
     public static final String PERSONALIZATION_STRING = "dfkTERW54fdkGHGH78)fgfFLufg$/HÜQAvcdgzZT";
 
-    byte[] getSecureRandomIV(final int ivLength) {
+    byte[] generateSecureRandomIV(final int ivLength) {
         byte[] iv = new byte[ivLength];
         SecureRandom secureRandom = getSecureRandom();
         secureRandom.nextBytes(iv);

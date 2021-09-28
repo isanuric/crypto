@@ -49,13 +49,14 @@ public class Crypto {
         return cipher.doFinal(encrypted);
     }
 
-    void encryptionFile(File inputFile, Cipher cipher, byte[] nonce)
+    void encryptFile(File inputFile, Cipher cipher, byte[] nonce)
             throws IOException, IllegalBlockSizeException, BadPaddingException {
 
         try (FileInputStream inputStream = new FileInputStream(inputFile)) {
             byte[] inputBytes = new byte[(int) inputFile.length()];
             inputStream.read(inputBytes);
             byte[] outputBytes = cipher.doFinal(inputBytes);
+
             final String outputFile = inputFile.getParentFile() + "/encrypt_" + inputFile.getName();
             try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
                 final byte[] encrypted = this.ivUtils.getFinalEncrypted(outputBytes, nonce);

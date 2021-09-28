@@ -46,7 +46,7 @@ public class CHACHA20POLY1305 {
                    IllegalBlockSizeException, BadPaddingException {
 
         SecretKey key = keystoreFactory.getKeyBKS(password);
-        byte[] nonce = ivUtils.getSecureRandomIV(CHACHA_IV_LENGTH);
+        byte[] nonce = ivUtils.generateSecureRandomIV(CHACHA_IV_LENGTH);
 
         Cipher cipher = initCipherChaChaPoly1305(Cipher.ENCRYPT_MODE, key, nonce);
         byte[] encrypted = cipher.doFinal(plainText.getBytes());
@@ -65,8 +65,7 @@ public class CHACHA20POLY1305 {
         final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(cipherTextDecoded, nonce);
 
         Cipher cipher = initCipherChaChaPoly1305(Cipher.DECRYPT_MODE, key, nonce);
-        byte[] decrypted = cipher.doFinal(encrypted);
-        return new String(decrypted);
+        return new String(cipher.doFinal(encrypted));
     }
 
     public void encryptFile(File inputFile, String password)
@@ -75,11 +74,11 @@ public class CHACHA20POLY1305 {
                    InvalidAlgorithmParameterException, InvalidKeyException,
                    IllegalBlockSizeException, BadPaddingException {
 
-        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
-        byte[] nonce = ivUtils.getSecureRandomIV(CHACHA_IV_LENGTH);
+        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyBKS(password);
+        byte[] nonce = ivUtils.generateSecureRandomIV(CHACHA_IV_LENGTH);
 
         Cipher cipher = initCipherChaChaPoly1305(Cipher.ENCRYPT_MODE, key, nonce);
-        crypto.encryptionFile(inputFile, cipher, nonce);
+        crypto.encryptFile(inputFile, cipher, nonce);
     }
 
     public void decryptFile(File inputFile, String password)
@@ -88,14 +87,15 @@ public class CHACHA20POLY1305 {
                    NoSuchAlgorithmException, NoSuchPaddingException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
-        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
-        FileInputStream inputStream = new FileInputStream(inputFile);
-        byte[] inputBytes = new byte[(int) inputFile.length()];
-        inputStream.read(inputBytes);
-        final byte[] nonce = ivUtils.getIVPartFromFram(inputBytes, CHACHA_IV_LENGTH);
+        try (FileInputStream inputStream = new FileInputStream(inputFile)) {
+            byte[] inputBytes = new byte[(int) inputFile.length()];
+            inputStream.read(inputBytes);
+            final byte[] nonce = ivUtils.getIVPartFromFram(inputBytes, CHACHA_IV_LENGTH);
 
-        Cipher cipher = initCipherChaChaPoly1305(Cipher.DECRYPT_MODE, key, nonce);
-        crypto.decryptFile3(inputFile, inputBytes, cipher, nonce);
+            final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyBKS(password);
+            Cipher cipher = initCipherChaChaPoly1305(Cipher.DECRYPT_MODE, key, nonce);
+            crypto.decryptFile3(inputFile, inputBytes, cipher, nonce);
+        }
     }
 
     private Cipher initCipherChaChaPoly1305(int cipherMode, SecretKey key, byte[] nonce)

@@ -47,7 +47,7 @@ public class CHACHA20 {
                    IllegalBlockSizeException, BadPaddingException {
 
         SecretKey key = keystoreFactory.getKeyBKS(password);
-        byte[] nonce = ivUtils.getSecureRandomIV(CHACHA_IV_LENGTH);
+        byte[] nonce = ivUtils.generateSecureRandomIV(CHACHA_IV_LENGTH);
 
         Cipher cipher = Cipher.getInstance(TRANSFORMATION_CHACHA);
         ChaCha20ParameterSpec cha20ParameterSpec = new ChaCha20ParameterSpec(nonce, COUNTER);
@@ -80,10 +80,10 @@ public class CHACHA20 {
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
         final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
-        byte[] nonce = ivUtils.getSecureRandomIV(CHACHA_IV_LENGTH);
+        byte[] nonce = ivUtils.generateSecureRandomIV(CHACHA_IV_LENGTH);
 
         Cipher cipher = initCipherChaCha(Cipher.ENCRYPT_MODE, key, nonce);
-        crypto.encryptionFile(inputFile, cipher, nonce);
+        crypto.encryptFile(inputFile, cipher, nonce);
     }
 
     public void decryptFile(File inputFile, String password)
@@ -93,13 +93,14 @@ public class CHACHA20 {
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
         final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
-        byte[] inputBytes = new byte[(int) inputFile.length()];
-        FileInputStream inputStream = new FileInputStream(inputFile);
-        inputStream.read(inputBytes);
-        final byte[] nonce = ivUtils.getIVPartFromFram(inputBytes, CHACHA_IV_LENGTH);
+        try (FileInputStream inputStream = new FileInputStream(inputFile)) {
+            byte[] inputBytes = new byte[(int) inputFile.length()];
+            inputStream.read(inputBytes);
+            final byte[] nonce = ivUtils.getIVPartFromFram(inputBytes, CHACHA_IV_LENGTH);
 
-        Cipher cipher = initCipherChaCha(Cipher.DECRYPT_MODE, key, nonce);
-        crypto.decryptFile3(inputFile, inputBytes, cipher, nonce);
+            Cipher cipher = initCipherChaCha(Cipher.DECRYPT_MODE, key, nonce);
+            crypto.decryptFile3(inputFile, inputBytes, cipher, nonce);
+        }
     }
 
     private Cipher initCipherChaCha(int cipherMode, SecretKey key, byte[] nonce)

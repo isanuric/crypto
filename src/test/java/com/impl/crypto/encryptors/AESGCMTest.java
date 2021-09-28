@@ -23,11 +23,11 @@ class AESGCMTest extends BaseTest {
     @RepeatedTest(1)
     void doCryptoFile() throws Exception {
         aesGcm.encryptFile(new File("src/main/resources/files/inputFile.txt"), keystorePassword);
-        aesGcm.decryptFile(new File("src/main/resources/files/encrypted_inputFile.txt"), keystorePassword);
+        aesGcm.decryptFile(new File("src/main/resources/files/encrypt_inputFile.txt"), keystorePassword);
 
         assertEquals(
                 new FileInputStream("src/main/resources/files/inputFile.txt").read(),
-                new FileInputStream("src/main/resources/files/decrypt_encrypted_inputFile.txt").read());
+                new FileInputStream("src/main/resources/files/decrypt_encrypt_inputFile.txt").read());
     }
 
 }

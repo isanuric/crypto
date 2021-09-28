@@ -6,20 +6,19 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.security.spec.AlgorithmParameterSpec;
 
 import static com.impl.crypto.encryptors.Crypto.Transition.AES_CBC;
 import static java.util.Base64.getDecoder;
@@ -41,87 +40,77 @@ public class AESCBC {
         this.ivUtils = ivUtils;
     }
 
-    public String encrypt(String message, String password) {
-        try {
-            Cipher cipher = Cipher.getInstance(AES_CBC.value);
-            final Key key = keystoreFactory.getKeyPKCS12(password);
-            final byte[] iv = ivUtils.getSecureRandomIV(CBC_IV_LENGTH);
-            cipher.init(Cipher.ENCRYPT_MODE, key, getIvParameterSpec(iv));
-            final byte[] encrypted = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
-            return encodeToString(ivUtils.getFinalEncrypted(encrypted, iv));
+    public String encrypt(String message, String password)
+            throws UnrecoverableKeyException, CertificateException, IOException, KeyStoreException,
+                   NoSuchAlgorithmException, NoSuchPaddingException,
+                   InvalidAlgorithmParameterException, InvalidKeyException,
+                   IllegalBlockSizeException, BadPaddingException {
 
-        } catch (IllegalBlockSizeException | BadPaddingException | IOException | KeyStoreException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
-            return "";
-        }
+        final byte[] iv = ivUtils.generateSecureRandomIV(CBC_IV_LENGTH);
+
+        Cipher cipher = initCipherAESCBC(Cipher.ENCRYPT_MODE, iv, password);
+        final byte[] encrypted = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
+        return encodeToString(ivUtils.getFinalEncrypted(encrypted, iv));
     }
 
-    public String decrypt(String encryptedString, String password) {
-        String decryptedText = "";
-        if (isEmpty(encryptedString)) {
-            return decryptedText;
+    public String decrypt(String cipherText, String password)
+            throws InvalidAlgorithmParameterException, UnrecoverableKeyException,
+                   NoSuchPaddingException, CertificateException, NoSuchAlgorithmException,
+                   IOException, KeyStoreException, InvalidKeyException, IllegalBlockSizeException,
+                   BadPaddingException {
+
+        if (isEmpty(cipherText)) {
+            return "";
         }
 
-        try {
-            final byte[] encryptedPayload = getDecoder().decode(encryptedString);
-            final byte[] iv = ivUtils.getIVPartFromFram(encryptedPayload, CBC_IV_LENGTH);
-            final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(encryptedPayload, iv);
+        final byte[] frame = getDecoder().decode(cipherText);
+        final byte[] iv = ivUtils.getIVPartFromFram(frame, CBC_IV_LENGTH);
+        final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(frame, iv);
 
-            final Key key = keystoreFactory.getKeyPKCS12(password);
-            Cipher cipher = Cipher.getInstance(AES_CBC.value);
-            cipher.init(Cipher.DECRYPT_MODE, key, getIvParameterSpec(iv));
-            byte[] decrypted = cipher.doFinal(encrypted);
-            return new String(decrypted);
-
-        } catch (BadPaddingException | IllegalBlockSizeException | NoSuchPaddingException | UnrecoverableKeyException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | KeyStoreException | IOException | CertificateException e) {
-            e.printStackTrace();
-            return decryptedText;
-        }
+        Cipher cipher = initCipherAESCBC(Cipher.DECRYPT_MODE, iv, password);
+        return new String(cipher.doFinal(encrypted));
     }
 
     public void encryptFile(File inputFile, String password)
             throws IOException, IllegalBlockSizeException, BadPaddingException,
                    NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
-                   CertificateException, KeyStoreException,
-                   InvalidAlgorithmParameterException, InvalidKeyException {
+                   CertificateException, KeyStoreException, InvalidAlgorithmParameterException,
+                   InvalidKeyException {
 
-        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
-        final byte[] iv = ivUtils.getSecureRandomIV(16);
+        final byte[] iv = ivUtils.generateSecureRandomIV(16);
 
-        Cipher cipher = Cipher.getInstance(AES_CBC.value);
-        cipher.init(Cipher.ENCRYPT_MODE, key,  getIvParameterSpec(iv));
-
-        crypto.encryptionFile(inputFile, cipher, iv);
+        Cipher cipher = initCipherAESCBC(Cipher.ENCRYPT_MODE, iv, password);
+        crypto.encryptFile(inputFile, cipher, iv);
     }
 
     public void decryptFile(File inputFile, String password)
             throws IOException, IllegalBlockSizeException, BadPaddingException,
                    NoSuchPaddingException, NoSuchAlgorithmException, UnrecoverableKeyException,
-                   CertificateException, KeyStoreException,
-                   InvalidAlgorithmParameterException, InvalidKeyException {
-
-        byte[] inputBytes = new byte[(int) inputFile.length()];
-        final byte[] iv = ivUtils.getIVPartFromFram(inputBytes, 16);
-        final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(inputBytes, iv);
+                   CertificateException, KeyStoreException, InvalidAlgorithmParameterException,
+                   InvalidKeyException {
 
         try (FileInputStream inputStream = new FileInputStream(inputFile)) {
+            byte[] inputBytes = new byte[(int) inputFile.length()];
             inputStream.read(inputBytes);
 
-            try (FileOutputStream outputStream = new FileOutputStream(inputFile.getParentFile() + "/decrypt_" + inputFile.getName())) {
+            final byte[] iv = ivUtils.getIVPartFromFram(inputBytes, 16);
 
-                byte[] decrypted = this.crypto.doDecryption(
-                        encrypted,
-                        keystoreFactory.getKeyPKCS12(password),
-                        AES_CBC.value,
-                        getIvParameterSpec(iv));
-
-                outputStream.write(decrypted);
-            }
+            Cipher cipher = initCipherAESCBC(Cipher.DECRYPT_MODE, iv, password);
+            crypto.decryptFile3(inputFile, inputBytes, cipher, iv);
         }
     }
 
-    private IvParameterSpec getIvParameterSpec(byte[] iv) {
-        return new IvParameterSpec(iv);
+    private Cipher initCipherAESCBC(int cipherMode, byte[] iv, String password)
+            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
+                   InvalidAlgorithmParameterException, UnrecoverableKeyException,
+                   CertificateException, IOException, KeyStoreException {
+
+        final SecretKey key = (SecretKey) keystoreFactory.getKeyPKCS12(password);
+
+        Cipher cipher = Cipher.getInstance(AES_CBC.value);
+        AlgorithmParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+        cipher.init(cipherMode, key, ivParameterSpec, ivUtils.getSecureRandom());
+        return cipher;
     }
 
 }

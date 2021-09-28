@@ -7,7 +7,6 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -47,15 +46,11 @@ public class AESGCM {
                    IllegalBlockSizeException, BadPaddingException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
-        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
-        byte[] iv = ivUtils.getSecureRandomIV(GCM_IV_LENGTH);
+        byte[] iv = ivUtils.generateSecureRandomIV(GCM_IV_LENGTH);
 
-        Cipher cipher = Cipher.getInstance(AES_GCM.value);
-        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
-        cipher.init(Cipher.ENCRYPT_MODE, key, gcmParameterSpec);
+        Cipher cipher = initCipherAESGSM(Cipher.ENCRYPT_MODE, iv, password);
         final byte[] encrypted = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
         return encodeToString(ivUtils.getFinalEncrypted(encrypted, iv));
-
     }
 
     public String decrypt(String cipherText, String password)
@@ -67,12 +62,9 @@ public class AESGCM {
         final byte[] encryptedPayload = getDecoder().decode(cipherText);
         final byte[] iv = ivUtils.getIVPartFromFram(encryptedPayload, GCM_IV_LENGTH);
         final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(encryptedPayload, iv);
-        byte[] decrypted = crypto.doDecryption(
-                encrypted,
-                keystoreFactory.getKeyPKCS12(password),
-                Transition.AES_GCM.value,
-                new GCMParameterSpec(16 * 8, iv));
 
+        Cipher cipher = initCipherAESGSM(Cipher.DECRYPT_MODE, iv, password);
+        final byte[] decrypted = cipher.doFinal(encrypted);
         return new String(decrypted);
     }
 
@@ -82,14 +74,10 @@ public class AESGCM {
                    NoSuchAlgorithmException, NoSuchPaddingException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
-        byte[] iv = ivUtils.getSecureRandomIV(GCM_IV_LENGTH);
-        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
+        byte[] iv = ivUtils.generateSecureRandomIV(GCM_IV_LENGTH);
 
-        Cipher cipher = Cipher.getInstance(AES_GCM.value);
-        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv);
-        cipher.init(Cipher.ENCRYPT_MODE, key, gcmParameterSpec);
-
-        crypto.encryptionFile(inputFile, cipher, iv);
+        Cipher cipher = initCipherAESGSM(Cipher.ENCRYPT_MODE, iv, password);
+        crypto.encryptFile(inputFile, cipher, iv);
     }
 
     public void decryptFile(File inputFile, String password)
@@ -115,7 +103,21 @@ public class AESGCM {
         }
     }
 
+    private Cipher initCipherAESGSM(int cipherMode, byte[] iv, String password)
+            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
+                   InvalidAlgorithmParameterException, UnrecoverableKeyException,
+                   CertificateException, IOException, KeyStoreException {
+
+        Cipher cipher = Cipher.getInstance(AES_GCM.value);
+        cipher.init(
+                cipherMode,
+                keystoreFactory.getKeyPKCS12(password),
+                new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv));
+        return cipher;
+    }
+
 }
+
 
 
 

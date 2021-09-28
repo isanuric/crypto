@@ -63,9 +63,23 @@ public class CryptoController {
         var result = "";
 
         if (mode == Cipher.ENCRYPT_MODE) {
-            result = aesCbc.encrypt(text, "");
+            try {
+                result = aesCbc.encrypt(text, "");
+            } catch (UnrecoverableKeyException | BadPaddingException | IllegalBlockSizeException |
+                    InvalidKeyException | InvalidAlgorithmParameterException |
+                    NoSuchPaddingException | NoSuchAlgorithmException | KeyStoreException |
+                    IOException | CertificateException e) {
+                e.printStackTrace();
+            }
         } else if (mode == Cipher.DECRYPT_MODE) {
-            result = aesCbc.decrypt(text, "");
+            try {
+                result = aesCbc.decrypt(text, "");
+            } catch (UnrecoverableKeyException | BadPaddingException | IllegalBlockSizeException |
+                    InvalidKeyException | InvalidAlgorithmParameterException |
+                    NoSuchPaddingException | NoSuchAlgorithmException | KeyStoreException |
+                    IOException | CertificateException e) {
+                e.printStackTrace();
+            }
         }
 
         model.addAttribute("cryptoResult", result);

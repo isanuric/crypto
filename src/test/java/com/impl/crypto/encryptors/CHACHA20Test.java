@@ -13,14 +13,14 @@ class CHACHA20Test extends BaseTest {
     @Autowired
     private CHACHA20 chacha20;
 
-    @RepeatedTest(1000)
+    @RepeatedTest(1)
     void encryptMessageKeystore() throws Exception {
         String plainText = "Initializing Spring embedded WebApplicationContext";
         final String encrypted = chacha20.encrypt(plainText, keystorePassword);
         assertEquals(plainText, chacha20.decrypt(encrypted, keystorePassword));
     }
 
-    @RepeatedTest(1000)
+    @RepeatedTest(1)
     void doCryptoFile() throws Exception {
         chacha20.encryptFile(
                 new File("src/main/resources/files/inputFile.txt"),

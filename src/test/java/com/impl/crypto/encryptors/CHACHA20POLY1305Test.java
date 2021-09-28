@@ -10,7 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CHACHA20POLY1305Test extends BaseTest {
 
-    public static final int REPEATES = 1000;
+    public static final int REPEATES = 1;
+
     @Autowired
     private CHACHA20POLY1305 chacha20POLY1305;
 

@@ -28,6 +28,7 @@ public class KeystoreFactory {
     Key getKeyPKCS12(String password)
             throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException,
                    UnrecoverableKeyException {
+
         try (InputStream keystoreStream = new FileInputStream(keystorePath)) {
             KeyStore keystore = KeyStore.getInstance("PKCS12");
             keystore.load(keystoreStream, password.toCharArray());
@@ -36,7 +37,6 @@ public class KeystoreFactory {
             if (!keystore.containsAlias(alias)) {
                 throw new KeyStoreException("Alias for key not found");
             }
-
             return keystore.getKey(alias, password.toCharArray());
         }
     }
@@ -44,9 +44,9 @@ public class KeystoreFactory {
     SecretKey getKeyBKS(String password)
             throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException,
                    UnrecoverableKeyException {
-        Security.insertProviderAt(new BouncyCastleProvider(), 1);
-        try (InputStream keystoreStream = new FileInputStream(keystoreChachaPath)) {
 
+        Security.insertProviderAt(new BouncyCastleProvider(), 13);
+        try (InputStream keystoreStream = new FileInputStream(keystoreChachaPath)) {
             KeyStore keystore = KeyStore.getInstance("BKS");
             keystore.load(keystoreStream, password.toCharArray());
 
@@ -54,11 +54,7 @@ public class KeystoreFactory {
             if (!keystore.containsAlias(alias)) {
                 throw new KeyStoreException("Alias for key not found");
             }
-
             return (SecretKey) keystore.getKey(alias, "qayXSW321".toCharArray());
         }
     }
 }
-
-
-
