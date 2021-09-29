@@ -1,4 +1,4 @@
-package com.impl.crypto.encryptors;
+package com.impl.crypto.symmetric;
 
 import org.springframework.stereotype.Service;
 
@@ -6,12 +6,10 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.ChaCha20ParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
@@ -19,16 +17,15 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
-import static com.impl.crypto.encryptors.Crypto.Transition.CHACHA;
+import static com.impl.crypto.symmetric.Crypto.Transition.CHACHA;
 import static java.util.Base64.getDecoder;
 import static org.springframework.util.Base64Utils.encodeToString;
 
 @Service
 public class CHACHA20 {
 
-    private static final int COUNTER = 10;
+    private static final int COUNTER = 20;
     private static final int CHACHA_IV_LENGTH = 12;
-    private static final String TRANSFORMATION_CHACHA = "ChaCha20";
 
     private Crypto crypto;
     private KeystoreFactory keystoreFactory;
@@ -46,14 +43,11 @@ public class CHACHA20 {
                    InvalidAlgorithmParameterException, InvalidKeyException,
                    IllegalBlockSizeException, BadPaddingException {
 
-        SecretKey key = keystoreFactory.getKeyBKS(password);
         byte[] nonce = ivUtils.generateSecureRandomIV(CHACHA_IV_LENGTH);
 
-        Cipher cipher = Cipher.getInstance(TRANSFORMATION_CHACHA);
-        ChaCha20ParameterSpec cha20ParameterSpec = new ChaCha20ParameterSpec(nonce, COUNTER);
-        cipher.init(Cipher.ENCRYPT_MODE, key, cha20ParameterSpec);
-        byte[] encrypted = cipher.doFinal(plainText.getBytes());
-        return encodeToString(ivUtils.getFinalEncrypted(encrypted, nonce));
+        Cipher cipher = getCipher(Cipher.ENCRYPT_MODE, nonce, password);
+        byte[] encrypted = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
+        return encodeToString(ivUtils.addIvToEncrypted(encrypted, nonce));
     }
     public String decrypt(String cipherText, String password)
             throws UnrecoverableKeyException, NoSuchPaddingException, CertificateException,
@@ -62,15 +56,11 @@ public class CHACHA20 {
                    BadPaddingException, InvalidKeyException {
 
         final byte[] cipherTextDecoded = getDecoder().decode(cipherText);
-        final byte[] nonce = ivUtils.getIVPartFromFram(cipherTextDecoded, CHACHA_IV_LENGTH);
+        final byte[] nonce = ivUtils.getIVPartFromFrame(cipherTextDecoded, CHACHA_IV_LENGTH);
         final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(cipherTextDecoded, nonce);
 
-        return new String(crypto.doDecryption(
-                        encrypted,
-                        keystoreFactory.getKeyBKS(password),
-                        Crypto.Transition.CHACHA.value,
-                        new ChaCha20ParameterSpec(nonce, COUNTER))
-        );
+        Cipher cipher = getCipher(Cipher.DECRYPT_MODE, nonce, password);
+        return new String(cipher.doFinal(encrypted));
     }
 
     public void encryptFile(File inputFile, String password)
@@ -79,10 +69,9 @@ public class CHACHA20 {
                    NoSuchAlgorithmException, NoSuchPaddingException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
-        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
         byte[] nonce = ivUtils.generateSecureRandomIV(CHACHA_IV_LENGTH);
 
-        Cipher cipher = initCipherChaCha(Cipher.ENCRYPT_MODE, key, nonce);
+        Cipher cipher = getCipher(Cipher.ENCRYPT_MODE, nonce, password);
         crypto.encryptFile(inputFile, cipher, nonce);
     }
 
@@ -92,25 +81,25 @@ public class CHACHA20 {
                    NoSuchAlgorithmException, NoSuchPaddingException,
                    InvalidAlgorithmParameterException, InvalidKeyException {
 
-        final SecretKeySpec key = (SecretKeySpec) keystoreFactory.getKeyPKCS12(password);
-        try (FileInputStream inputStream = new FileInputStream(inputFile)) {
-            byte[] inputBytes = new byte[(int) inputFile.length()];
-            inputStream.read(inputBytes);
-            final byte[] nonce = ivUtils.getIVPartFromFram(inputBytes, CHACHA_IV_LENGTH);
+        final byte[] nonce = ivUtils.getIVPartFromFrame(inputFile, CHACHA_IV_LENGTH);
 
-            Cipher cipher = initCipherChaCha(Cipher.DECRYPT_MODE, key, nonce);
-            crypto.decryptFile3(inputFile, inputBytes, cipher, nonce);
-        }
+        Cipher cipher = getCipher(Cipher.DECRYPT_MODE, nonce, password);
+        crypto.decryptFile(inputFile, cipher, nonce);
     }
 
-    private Cipher initCipherChaCha(int cipherMode, SecretKey key, byte[] nonce)
+    private Cipher getCipher(int cipherMode, byte[] nonce, String password)
             throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-                   InvalidAlgorithmParameterException {
+                   InvalidAlgorithmParameterException, UnrecoverableKeyException,
+                   CertificateException, IOException, KeyStoreException {
+
         Cipher cipher = Cipher.getInstance(CHACHA.value);
-        ChaCha20ParameterSpec cha20ParameterSpec = new ChaCha20ParameterSpec(nonce, COUNTER);
-        cipher.init(cipherMode, key, cha20ParameterSpec);
+        cipher.init(
+                cipherMode,
+                keystoreFactory.getKeyBKS(password),
+                new ChaCha20ParameterSpec(nonce, COUNTER));
         return cipher;
     }
 
 }
+
 

@@ -1,4 +1,4 @@
-package com.impl.crypto.encryptors;
+package com.impl.crypto.symmetric;
 
 import org.springframework.boot.test.context.SpringBootTest;
 

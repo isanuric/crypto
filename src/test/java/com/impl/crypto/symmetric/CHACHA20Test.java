@@ -1,4 +1,4 @@
-package com.impl.crypto.encryptors;
+package com.impl.crypto.symmetric;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,27 +8,25 @@ import java.io.FileInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class CHACHA20POLY1305Test extends BaseTest {
-
-    public static final int REPEATES = 1;
+class CHACHA20Test extends BaseTest {
 
     @Autowired
-    private CHACHA20POLY1305 chacha20POLY1305;
+    private CHACHA20 chacha20;
 
-    @RepeatedTest(REPEATES)
-    void encryptMessageKeystore() throws Exception {
+    @RepeatedTest(1)
+    void doCrypto() throws Exception {
         String plainText = "Initializing Spring embedded WebApplicationContext";
-        final String encrypted = chacha20POLY1305.encrypt(plainText, keystorePassword);
-        assertEquals(plainText, chacha20POLY1305.decrypt(encrypted, keystorePassword));
+        final String encrypted = chacha20.encrypt(plainText, keystorePassword);
+        assertEquals(plainText, chacha20.decrypt(encrypted, keystorePassword));
     }
 
-    @RepeatedTest(REPEATES)
+    @RepeatedTest(1)
     void doCryptoFile() throws Exception {
-        chacha20POLY1305.encryptFile(
+        chacha20.encryptFile(
                 new File("src/main/resources/files/inputFile.txt"),
                 keystorePassword);
 
-        chacha20POLY1305.decryptFile(
+        chacha20.decryptFile(
                 new File("src/main/resources/files/encrypt_inputFile.txt"),
                 keystorePassword);
 
@@ -36,5 +34,5 @@ class CHACHA20POLY1305Test extends BaseTest {
                 new FileInputStream("src/main/resources/files/inputFile.txt").read(),
                 new FileInputStream("src/main/resources/files/decrypt_encrypt_inputFile.txt").read());
     }
-
 }
+

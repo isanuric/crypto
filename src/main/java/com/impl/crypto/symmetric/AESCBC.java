@@ -1,4 +1,4 @@
-package com.impl.crypto.encryptors;
+package com.impl.crypto.symmetric;
 
 import org.springframework.stereotype.Service;
 
@@ -6,10 +6,8 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
@@ -18,9 +16,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.security.spec.AlgorithmParameterSpec;
 
-import static com.impl.crypto.encryptors.Crypto.Transition.AES_CBC;
+import static com.impl.crypto.symmetric.Crypto.Transition.AES_CBC;
 import static java.util.Base64.getDecoder;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.springframework.util.Base64Utils.encodeToString;
@@ -48,9 +45,9 @@ public class AESCBC {
 
         final byte[] iv = ivUtils.generateSecureRandomIV(CBC_IV_LENGTH);
 
-        Cipher cipher = initCipherAESCBC(Cipher.ENCRYPT_MODE, iv, password);
+        Cipher cipher = getCipher(Cipher.ENCRYPT_MODE, iv, password);
         final byte[] encrypted = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
-        return encodeToString(ivUtils.getFinalEncrypted(encrypted, iv));
+        return encodeToString(ivUtils.addIvToEncrypted(encrypted, iv));
     }
 
     public String decrypt(String cipherText, String password)
@@ -64,10 +61,10 @@ public class AESCBC {
         }
 
         final byte[] frame = getDecoder().decode(cipherText);
-        final byte[] iv = ivUtils.getIVPartFromFram(frame, CBC_IV_LENGTH);
+        final byte[] iv = ivUtils.getIVPartFromFrame(frame, CBC_IV_LENGTH);
         final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(frame, iv);
 
-        Cipher cipher = initCipherAESCBC(Cipher.DECRYPT_MODE, iv, password);
+        Cipher cipher = getCipher(Cipher.DECRYPT_MODE, iv, password);
         return new String(cipher.doFinal(encrypted));
     }
 
@@ -79,7 +76,7 @@ public class AESCBC {
 
         final byte[] iv = ivUtils.generateSecureRandomIV(16);
 
-        Cipher cipher = initCipherAESCBC(Cipher.ENCRYPT_MODE, iv, password);
+        Cipher cipher = getCipher(Cipher.ENCRYPT_MODE, iv, password);
         crypto.encryptFile(inputFile, cipher, iv);
     }
 
@@ -89,27 +86,23 @@ public class AESCBC {
                    CertificateException, KeyStoreException, InvalidAlgorithmParameterException,
                    InvalidKeyException {
 
-        try (FileInputStream inputStream = new FileInputStream(inputFile)) {
-            byte[] inputBytes = new byte[(int) inputFile.length()];
-            inputStream.read(inputBytes);
+            final byte[] iv = ivUtils.getIVPartFromFrame(inputFile, 16);
 
-            final byte[] iv = ivUtils.getIVPartFromFram(inputBytes, 16);
-
-            Cipher cipher = initCipherAESCBC(Cipher.DECRYPT_MODE, iv, password);
-            crypto.decryptFile3(inputFile, inputBytes, cipher, iv);
-        }
+            Cipher cipher = getCipher(Cipher.DECRYPT_MODE, iv, password);
+            crypto.decryptFile(inputFile, cipher, iv);
     }
 
-    private Cipher initCipherAESCBC(int cipherMode, byte[] iv, String password)
+    private Cipher getCipher(int cipherMode, byte[] iv, String password)
             throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
                    InvalidAlgorithmParameterException, UnrecoverableKeyException,
                    CertificateException, IOException, KeyStoreException {
 
-        final SecretKey key = (SecretKey) keystoreFactory.getKeyPKCS12(password);
-
         Cipher cipher = Cipher.getInstance(AES_CBC.value);
-        AlgorithmParameterSpec ivParameterSpec = new IvParameterSpec(iv);
-        cipher.init(cipherMode, key, ivParameterSpec, ivUtils.getSecureRandom());
+        cipher.init(
+                cipherMode,
+                keystoreFactory.getKeyPKCS12(password),
+                new IvParameterSpec(iv),
+                ivUtils.getSecureRandom());
         return cipher;
     }
 

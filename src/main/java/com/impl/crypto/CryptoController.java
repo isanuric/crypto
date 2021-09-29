@@ -1,6 +1,6 @@
 package com.impl.crypto;
 
-import com.impl.crypto.encryptors.AESCBC;
+import com.impl.crypto.symmetric.AESCBC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

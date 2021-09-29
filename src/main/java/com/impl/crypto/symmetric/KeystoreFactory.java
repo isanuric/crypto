@@ -1,4 +1,4 @@
-package com.impl.crypto.encryptors;
+package com.impl.crypto.symmetric;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,3 +58,4 @@ public class KeystoreFactory {
         }
     }
 }
+

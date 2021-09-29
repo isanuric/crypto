@@ -1,20 +1,14 @@
-package com.impl.crypto.encryptors;
+package com.impl.crypto.symmetric;
 
 import org.springframework.stereotype.Service;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.AlgorithmParameterSpec;
 
 @Service
 public class Crypto {
@@ -38,34 +32,23 @@ public class Crypto {
         this.ivUtils = ivUtils;
     }
 
-    byte[] doDecryption(byte[] encrypted, Key key, String transition,
-            AlgorithmParameterSpec parameterSpec)
-            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-                   InvalidAlgorithmParameterException, IllegalBlockSizeException,
-                   BadPaddingException {
-
-        Cipher cipher = Cipher.getInstance(transition);
-        cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec);
-        return cipher.doFinal(encrypted);
-    }
-
     void encryptFile(File inputFile, Cipher cipher, byte[] nonce)
             throws IOException, IllegalBlockSizeException, BadPaddingException {
 
         try (FileInputStream inputStream = new FileInputStream(inputFile)) {
             byte[] inputBytes = new byte[(int) inputFile.length()];
             inputStream.read(inputBytes);
-            byte[] outputBytes = cipher.doFinal(inputBytes);
+            byte[] encryptedBytes = cipher.doFinal(inputBytes);
 
             final String outputFile = inputFile.getParentFile() + "/encrypt_" + inputFile.getName();
             try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
-                final byte[] encrypted = this.ivUtils.getFinalEncrypted(outputBytes, nonce);
+                final byte[] encrypted = this.ivUtils.addIvToEncrypted(encryptedBytes, nonce);
                 outputStream.write(encrypted);
             }
         }
     }
 
-    void decryptFile2(File inputFile, Cipher cipher, byte[] nonce)
+    void decryptFile(File inputFile, Cipher cipher, byte[] nonce)
             throws IOException, IllegalBlockSizeException, BadPaddingException {
         try (FileInputStream inputStream = new FileInputStream(inputFile)) {
             byte[] inputBytes = new byte[(int) inputFile.length()];
