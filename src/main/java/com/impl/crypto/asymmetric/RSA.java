@@ -10,7 +10,6 @@ import javax.crypto.NoSuchPaddingException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -47,20 +46,22 @@ public class RSA {
         this.keystore = KeyStore.getInstance("PKCS12");
     }
 
-    public String encrypt(String msg, String alias, String password)
+    public String encrypt(String plainText, String alias, String password)
             throws InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException,
                    UnrecoverableKeyException, CertificateException, KeyStoreException,
                    NoSuchAlgorithmException {
         PublicKey publicKey = getKeyPair(alias, password).getPublic();
         this.cipher.init(ENCRYPT_MODE, publicKey);
-        return encodeBase64String(cipher.doFinal(msg.getBytes(StandardCharsets.UTF_8)));
+        return encodeBase64String(cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8)));
     }
 
-    public String decrypt(String msg, PrivateKey key)
-            throws InvalidKeyException, UnsupportedEncodingException, IllegalBlockSizeException,
-                   BadPaddingException {
-        this.cipher.init(Cipher.DECRYPT_MODE, key);
-        return new String(cipher.doFinal(decodeBase64(msg)), StandardCharsets.UTF_8);
+    public String decrypt(String cipherText, String alias, String password)
+            throws InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException,
+                   UnrecoverableKeyException, CertificateException, KeyStoreException,
+                   NoSuchAlgorithmException {
+        PrivateKey privateKey = getKeyPair(alias, password).getPrivate();
+        this.cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        return new String(cipher.doFinal(decodeBase64(cipherText)), StandardCharsets.UTF_8);
     }
 
     KeyPair getKeyPair(String password)

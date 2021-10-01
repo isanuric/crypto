@@ -5,8 +5,6 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.security.KeyPair;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class RSATest extends BaseTest {
@@ -18,17 +16,16 @@ class RSATest extends BaseTest {
     private String keystoreAsymmetricPath;
 
     @Value("${keystore.asymmetric.password}")
-    private String  keystoreAsymmetricPassword;
+    private String keystoreAsyPassword;
 
     @Value("${keystore.asymmetric.alias}")
-    private String keystoreAsymmetricAlias;
+    private String keystoreAsyAlias;
 
     @RepeatedTest(1)
     void encryptMessageKeystore() throws Exception {
         String plainText = "Initializing Spring embedded WebApplicationContext";
-        final KeyPair keyPair = rsa.getKeyPair(keystoreAsymmetricAlias, keystoreAsymmetricPassword);
-        final String encrypted = rsa.encrypt(plainText, keystoreAsymmetricAlias, keystoreAsymmetricPassword);
-        assertEquals(plainText, rsa.decrypt(encrypted, keyPair.getPrivate()));
+        final String encrypted = rsa.encrypt(plainText, keystoreAsyAlias, keystoreAsyPassword);
+        assertEquals(plainText, rsa.decrypt(encrypted, keystoreAsyAlias, keystoreAsyPassword));
     }
 
 }
