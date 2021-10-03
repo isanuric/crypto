@@ -1,5 +1,6 @@
 package com.impl.crypto.symmetric;
 
+import com.impl.crypto.IvUtils;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.BadPaddingException;

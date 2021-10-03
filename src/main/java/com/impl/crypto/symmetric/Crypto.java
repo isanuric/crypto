@@ -1,5 +1,6 @@
 package com.impl.crypto.symmetric;
 
+import com.impl.crypto.IvUtils;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.BadPaddingException;
@@ -54,8 +55,8 @@ public class Crypto {
             byte[] inputBytes = new byte[(int) inputFile.length()];
             inputStream.read(inputBytes);
 
-            final String putputFile = inputFile.getParentFile() + "/decrypt_" + inputFile.getName();
-            try (FileOutputStream outputStream = new FileOutputStream(putputFile)) {
+            final String outputFile = inputFile.getParentFile() + "/decrypt_" + inputFile.getName();
+            try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
                 final byte[] encrypted = ivUtils.getEncryptedPartFromFrame(inputBytes, nonce);
                 byte[] decrypted = cipher.doFinal(encrypted);
                 outputStream.write(decrypted);

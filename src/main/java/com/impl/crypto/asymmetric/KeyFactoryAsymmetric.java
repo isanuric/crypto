@@ -20,14 +20,11 @@ import java.security.cert.CertificateException;
 public class KeyFactoryAsymmetric {
 
 
-    @Value("${this.keyStore.asymmetric.alias}")
+    @Value("${keystore.asymmetric.alias}")
     private String keystoreAsymmetricAlias;
 
-    @Value("${this.keyStore.asymmetric.path}")
+    @Value("${keystore.asymmetric.path}")
     private String keystoreAsymmetricPath;
-
-    @Value("${this.keyStore.asymmetric.password}")
-    private String  keystoreAsymmetricPassword;
 
     private KeyStore keyStore;
 
