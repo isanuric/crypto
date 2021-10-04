@@ -9,7 +9,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,15 +21,18 @@ import java.security.Key;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+
 
 @Service
 public class CryptoFile {
 
     private static final int AES_KEYSIZE = 256;
     private static final int IV_LENGTH = 16;
+    private static final int GCM_TAG_LENGTH = 16;
+    private static final String AES_GCM = "AES/GCM/NoPadding";
+    private static final String RSA_ECB_PKCS1 = "RSA/ECB/PKCS1Padding";
 
     private IvUtils ivUtils;
     private KeyFactoryAsymmetric keyFactory;
@@ -54,18 +57,15 @@ public class CryptoFile {
 
             // write iv to file
             final byte[] iv = ivUtils.generateSecureRandomIV(IV_LENGTH);
-            final IvParameterSpec ivspec = new IvParameterSpec(iv);
             fileOutputStream.write(iv);
 
-            // write encrypted text to file
-            try (FileInputStream fileInputStream = new FileInputStream(inputFile)) {
-                Cipher cipherAES = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                cipherAES.init(Cipher.ENCRYPT_MODE, secretKey, ivspec, new SecureRandom());
+            // write cipher text to file
+            Cipher cipher = getCipher(Cipher.ENCRYPT_MODE, secretKey, iv);
+            byte[] inputBytes = new byte[(int) inputFile.length()];
 
-                byte[] inputBytes = new byte[(int) inputFile.length()];
+            try (FileInputStream fileInputStream = new FileInputStream(inputFile)) {
                 fileInputStream.read(inputBytes);
-                final byte[] cipherByte = cipherAES.doFinal(inputBytes);
-                fileOutputStream.write(cipherByte);
+                fileOutputStream.write(cipher.doFinal(inputBytes));
             }
         }
     }
@@ -80,7 +80,7 @@ public class CryptoFile {
             throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
                    IllegalBlockSizeException, BadPaddingException {
 
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        Cipher cipher = Cipher.getInstance(RSA_ECB_PKCS1);
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
         return cipher.doFinal(secretKey.getEncoded());
     }
@@ -92,18 +92,16 @@ public class CryptoFile {
                    InvalidAlgorithmParameterException {
 
         try (FileInputStream fileInputStream = new FileInputStream(inputFile)) {
-            SecretKeySpec secretKeySpec;
-            secretKeySpec = decryptSecretKey(password, fileInputStream);
+            SecretKeySpec secretKeySpec = decryptSecretKey(password, fileInputStream);
 
             byte[] iv = new byte[IV_LENGTH];
             fileInputStream.read(iv);
-            IvParameterSpec ivspec = new IvParameterSpec(iv);
 
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivspec);
+            Cipher cipher = getCipher(Cipher.DECRYPT_MODE, secretKeySpec, iv);
+            byte[] inputBytes = new byte[(int) inputFile.length() - AES_KEYSIZE - IV_LENGTH];
+            fileInputStream.read(inputBytes);
+
             try (FileOutputStream outputStream = new FileOutputStream(inputFile + ".dec")) {
-                byte[] inputBytes = new byte[(int) inputFile.length() - AES_KEYSIZE - IV_LENGTH];
-                fileInputStream.read(inputBytes);
                 outputStream.write(cipher.doFinal(inputBytes));
             }
         }
@@ -114,13 +112,24 @@ public class CryptoFile {
                    CertificateException, UnrecoverableKeyException, InvalidKeyException,
                    IllegalBlockSizeException, BadPaddingException {
 
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        Cipher cipher = Cipher.getInstance(RSA_ECB_PKCS1);
         final Key privateKey = this.keyFactory.getKeyPair(password).getPrivate();
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        byte[] secretkey = new byte[AES_KEYSIZE];
-        fileInputStream.read(secretkey);
-        byte[] secretKeyDecrypted = cipher.doFinal(secretkey);
-        return new SecretKeySpec(secretKeyDecrypted, "AES");
+        byte[] secretKey = new byte[AES_KEYSIZE];
+        fileInputStream.read(secretKey);
+        return new SecretKeySpec(cipher.doFinal(secretKey), "AES");
+    }
+
+    private Cipher getCipher(int cipherMode, SecretKey secretKey, byte[] iv)
+            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
+                   InvalidAlgorithmParameterException {
+
+        Cipher cipher = Cipher.getInstance(AES_GCM);
+        cipher.init(
+                cipherMode,
+                secretKey,
+                new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv));
+        return cipher;
     }
 
 }
