@@ -27,12 +27,12 @@ public class RSAECB {
 
         Cipher cipher = Cipher.getInstance(TRANSFORMATION);
         cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
-        var cipherTextBytes = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
-        String cipherText = getEncoder().encodeToString(cipherTextBytes);
+        var encryptedByte = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
+        String encrypted = getEncoder().encodeToString(encryptedByte);
 
         cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
-        var decryptedCipherTextBytes = cipher.doFinal(getDecoder().decode(cipherText));
-        return new String(decryptedCipherTextBytes, StandardCharsets.UTF_8);
+        var decryptedByte = cipher.doFinal(getDecoder().decode(encrypted));
+        return new String(decryptedByte, StandardCharsets.UTF_8);
 
     }
 
