@@ -1,6 +1,8 @@
 package com.impl.crypto.asymmetric;
 
+import com.impl.crypto.CryptoException;
 import com.impl.crypto.IvUtils;
+import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.BadPaddingException;
@@ -24,7 +26,6 @@ import java.security.PublicKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
-
 @Service
 public class CryptoFile {
 
@@ -42,7 +43,26 @@ public class CryptoFile {
         this.keyFactory = keyFactory;
     }
 
-    void encrypt(File inputFile, String password)
+    void encryptFileAndDeleteOriginal(File inputFile, String password)
+            throws InvalidAlgorithmParameterException, UnrecoverableKeyException,
+                   NoSuchPaddingException, IllegalBlockSizeException, CertificateException,
+                   IOException, KeyStoreException, NoSuchAlgorithmException, BadPaddingException,
+                   InvalidKeyException, CryptoException {
+
+        encryptFile(inputFile, password);
+
+        decryptFile(new File(inputFile + ".enc"), password);
+        final File decryptedFile = new File(inputFile + ".enc.dec");
+
+        if (FileUtils.contentEquals(inputFile, decryptedFile)) {
+            inputFile.delete();
+            decryptedFile.delete();
+        } else {
+            throw new CryptoException("File is corrupt");
+        }
+    }
+
+    void encryptFile(File inputFile, String password)
             throws IOException, UnrecoverableKeyException, CertificateException, KeyStoreException,
                    NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException,
                    BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
@@ -125,11 +145,9 @@ public class CryptoFile {
                    InvalidAlgorithmParameterException {
 
         Cipher cipher = Cipher.getInstance(AES_GCM);
-        cipher.init(
-                cipherMode,
-                secretKey,
-                new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv));
+        cipher.init(cipherMode, secretKey, new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv));
         return cipher;
     }
 
 }
+
