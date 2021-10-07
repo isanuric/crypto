@@ -10,8 +10,8 @@
 <div class="row">
   <div class="col-sm-5"></div>
   <div class="col-sm-6">
-    <p th:if= "${time != null}">
-      <span th:text="${time}" />
+    <p th:if="${time != null}">
+      <span th:text="${time}"/>
     </p>
   </div>
 </div>
@@ -21,16 +21,16 @@
     <div class="row">
       <fieldset>
         <form action="#" th:action="@{/crypto}" method="post" th:object="${formData}">
-            <legend>Encryption/Decryption</legend>
-            <textarea type="text" placeholder="Text" rows="10" cols="35" th:field="*{text}" /><br/>
-            <button class="inverse" type="submit">Execute Cryptography</button>
-            <select th:field="*{mode}">
-              <option th:value=1 th:text="Encrypt"></option>
-              <option th:value=2 th:text="Decrypt"></option>
-            </select>
-            <p th:if= "${cryptoResult != null}">
-              <span class="circular" th:text="${cryptoResult}" />
-            </p>
+          <legend>Encryption/Decryption</legend>
+          <textarea type="text" placeholder="Text" rows="10" cols="35" th:field="*{text}"/><br/>
+          <button class="inverse" type="submit">Execute Cryptography</button>
+          <select th:field="*{mode}">
+            <option th:value=1 th:text="Encrypt"></option>
+            <option th:value=2 th:text="Decrypt"></option>
+          </select>
+          <p th:if="${cryptoResult != null}">
+            <span class="circular" th:text="${cryptoResult}"/>
+          </p>
         </form>
       </fieldset>
     </div>
@@ -41,21 +41,23 @@
 <section class="my-5">
   <div class="container">
     <div class="row">
-<!--      <div class="col-md-8 mx-auto">-->
-        <fieldset>
-          <legend>File Encryption/Decryption</legend>
-          <p class="alert alert-primary" th:if="${message ne null}" th:text="${message}"></p>
-          <form action="#" th:action="@{/crypto-file}" method="post" th:object="${formData}" enctype="multipart/form-data">
-            <div class="form-group">
-              <input type="file" name="file" class="form-control-file">
-            </div>
-            <button class="inverse" type="submit">Execute Cryptography</button>
-            <select th:field="*{mode}">
-              <option th:value=1 th:text="Encrypt"></option>
-              <option th:value=2 th:text="Decrypt"></option>
-            </select>
-          </form>
-        </fieldset>
+      <!--      <div class="col-md-8 mx-auto">-->
+      <fieldset>
+        <legend>File Encryption/Decryption</legend>
+        <p class="alert alert-primary" th:if="${message ne null}" th:text="${message}"></p>
+        <form action="#" th:action="@{/asy/crypto-file}" method="post" th:object="${formData}"
+              enctype="multipart/form-data">
+          <input type="file" name="file" class="form-control-file"><br>
+          <p>
+            <input type="password" placeholder="Password" cols="35" th:field="*{password}"><br>
+          </p>
+          <button class="inverse" type="submit">Execute Cryptography</button>
+          <select th:field="*{mode}">
+            <option th:value=1 th:text="Encrypt"></option>
+            <option th:value=2 th:text="Decrypt"></option>
+          </select>
+        </form>
+      </fieldset>
     </div>
   </div>
 </section>

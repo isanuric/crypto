@@ -1,6 +1,7 @@
-package com.impl.crypto;
+package com.impl.crypto.asymmetric;
 
-import com.impl.crypto.asymmetric.CryptoFile;
+import com.impl.crypto.CryptoException;
+import com.impl.crypto.FormData;
 import com.impl.crypto.symmetric.AESCBC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -8,11 +9,11 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.File;
@@ -36,7 +37,8 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.springframework.util.StringUtils.cleanPath;
 
 @Controller
-public class CryptoController {
+@RequestMapping("/asy")
+public class CryptoRSAController {
 
     @Value("${uploads.path}")
     private String uploadsPath;
@@ -47,7 +49,7 @@ public class CryptoController {
     private final AESCBC aesCbc;
     private final CryptoFile cryptoFile;
 
-    public CryptoController(AESCBC aesCbc, CryptoFile cryptoFile) {
+    public CryptoRSAController(AESCBC aesCbc, CryptoFile cryptoFile) {
         this.aesCbc = aesCbc;
         this.cryptoFile = cryptoFile;
     }
@@ -56,39 +58,6 @@ public class CryptoController {
     public String getTime(Model model) {
         setDate(model);
         model.addAttribute("formData", new FormData());
-        return INDEX_HTML;
-    }
-
-    @PostMapping("/crypto")
-    public String doCrypto(@ModelAttribute("formData") FormData formData, Model model) {
-        setDate(model);
-        var mode = formData.getMode();
-        var text = formData.getText();
-        var password = formData.getPassword();
-        System.out.println(password);
-        var result = "";
-
-        if (mode == Cipher.ENCRYPT_MODE) {
-            try {
-                result = aesCbc.encrypt(text, "");
-            } catch (UnrecoverableKeyException | BadPaddingException | IllegalBlockSizeException |
-                    InvalidKeyException | InvalidAlgorithmParameterException |
-                    NoSuchPaddingException | NoSuchAlgorithmException | KeyStoreException |
-                    IOException | CertificateException e) {
-                e.printStackTrace();
-            }
-        } else if (mode == Cipher.DECRYPT_MODE) {
-            try {
-                result = aesCbc.decrypt(text, "");
-            } catch (UnrecoverableKeyException | BadPaddingException | IllegalBlockSizeException |
-                    InvalidKeyException | InvalidAlgorithmParameterException |
-                    NoSuchPaddingException | NoSuchAlgorithmException | KeyStoreException |
-                    IOException | CertificateException e) {
-                e.printStackTrace();
-            }
-        }
-
-        model.addAttribute("cryptoResult", result);
         return INDEX_HTML;
     }
 
@@ -115,12 +84,14 @@ public class CryptoController {
         try {
             Path path = Paths.get(uploadsPath + fileName);
             Files.copy(multipartFile.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-            aesCbc.encryptFile(new File(uploadsPath + fileName), "2LS4U!%GcSr$qpV$43k%");
+            cryptoFile.encryptFileAndDeleteOriginal(new File(uploadsPath + fileName), formData.getPassword());
 
-        } catch (IOException | IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException | NoSuchAlgorithmException | UnrecoverableKeyException | CertificateException | KeyStoreException | InvalidAlgorithmParameterException | InvalidKeyException e) {
+        } catch (IOException | IllegalBlockSizeException | BadPaddingException |
+                NoSuchPaddingException | NoSuchAlgorithmException | UnrecoverableKeyException |
+                CertificateException | KeyStoreException | InvalidAlgorithmParameterException |
+                InvalidKeyException | CryptoException e) {
             e.printStackTrace();
-            model.addAttribute(MESSAGE_ATTR,
-                    "Can not execute cryptography process: " + e.getMessage());
+            model.addAttribute(MESSAGE_ATTR,"Can not execute cryptography process: " + e.getMessage());
             return INDEX_HTML;
         }
 
@@ -128,3 +99,7 @@ public class CryptoController {
         return redirectUrl;
     }
 }
+
+
+
+
