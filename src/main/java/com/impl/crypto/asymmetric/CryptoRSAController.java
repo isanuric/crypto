@@ -4,13 +4,15 @@ import com.impl.crypto.CryptoException;
 import com.impl.crypto.FormData;
 import com.impl.crypto.symmetric.AESCBC;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.BadPaddingException;
@@ -36,7 +38,8 @@ import static java.util.Locale.getDefault;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.springframework.util.StringUtils.cleanPath;
 
-@Controller
+@RestController
+@CrossOrigin
 @RequestMapping("/asy")
 public class CryptoRSAController {
 
@@ -98,6 +101,14 @@ public class CryptoRSAController {
         model.addAttribute(MESSAGE_ATTR, "Cryptography process successfully done for: " + fileName);
         return redirectUrl;
     }
+
+    @PostMapping("/c-t")
+    public String getReact(@RequestBody FormData formData) {
+        System.out.println(formData.getPlainText());
+        System.out.println(formData.getPassword());
+        return "done";
+    }
+
 }
 
 

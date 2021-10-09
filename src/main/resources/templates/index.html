@@ -22,7 +22,7 @@
       <fieldset>
         <form action="#" th:action="@{/crypto}" method="post" th:object="${formData}">
           <legend>Encryption/Decryption</legend>
-          <textarea type="text" placeholder="Text" rows="10" cols="35" th:field="*{text}"/><br/>
+          <textarea type="text" placeholder="Text" rows="10" cols="35" th:field="*{plainText}"/><br/>
           <button class="inverse" type="submit">Execute Cryptography</button>
           <select th:field="*{mode}">
             <option th:value=1 th:text="Encrypt"></option>

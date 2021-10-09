@@ -2,7 +2,7 @@ package com.impl.crypto;
 
 public class FormData {
 
-    private String text;
+    private String plainText;
     private String car;
     private int mode;
     private String password;
@@ -15,12 +15,12 @@ public class FormData {
         this.password = password;
     }
 
-    public String getText() {
-        return text;
+    public String getPlainText() {
+        return plainText;
     }
 
-    public void setText(String text) {
-        this.text = text;
+    public void setPlainText(String plainText) {
+        this.plainText = plainText;
     }
 
     public String getCar() {

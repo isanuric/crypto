@@ -36,3 +36,13 @@ build/
 mvnw
 mvnw.cmd
 
+me.text
+keystore*
+.DS_Store
+asymmetric.p12
+keys.bks
+files/
+uploads/
+
+
+

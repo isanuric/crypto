@@ -63,7 +63,7 @@ public class CryptoController {
     public String doCrypto(@ModelAttribute("formData") FormData formData, Model model) {
         setDate(model);
         var mode = formData.getMode();
-        var text = formData.getText();
+        var text = formData.getPlainText();
         var password = formData.getPassword();
         System.out.println(password);
         var result = "";
