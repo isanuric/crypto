@@ -1,0 +1,34 @@
+export default [
+    {
+        src:'https://images.freeimages.com/images/large-previews/ad2/sky-colours-1197564.jpg',
+        alt:'picOne'
+    },
+    {
+        src:'https://images.freeimages.com/images/large-previews/b23/sunset-1-1404015.jpg',
+        alt:'picTwo'
+    },
+    {
+        src:'https://images.freeimages.com/images/large-previews/159/offshore-sunset-10-1398250.jpg',
+        alt:'picThree'
+    },
+    {
+        src:'https://images.freeimages.com/images/large-previews/499/wind-and-energy-1622460.jpg',
+        alt:'pic4'
+    },
+    {
+        src:'https://images.freeimages.com/images/large-previews/272/alien-sky-1-1175969.jpg',
+        alt:'pic5'
+    },
+    {
+        src:'https://images.freeimages.com/images/large-previews/1c7/sunset-1555084.jpg',
+        alt:'pic6'
+    },
+    {
+        src:'https://images.freeimages.com/images/large-previews/a8d/it-s-raining-flowers-1530809.jpg',
+        alt:'pic7'
+    },
+    {
+        src:'https://images.freeimages.com/images/large-previews/2da/church-1220408.jpg',
+        alt:'pic8'
+    }
+]

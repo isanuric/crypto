@@ -1,4 +1,5 @@
-import * as React from 'react';
+//import * as React from 'react';
+import {useEffect, useState} from 'react';
 import Form from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import { Button, Container, Paper } from '@mui/material';
@@ -7,8 +8,9 @@ export default function Asymmetric() {
 
     const paperStyle={padding:'50px 20px', width:500, margin:'20px auto'}
     const fieldStyle={margin:'5px auto'}
-    const[plainText, setPlainText]=React.useState('')
-    const[password, setPassword]=React.useState('')
+    const[plainText, setPlainText]=useState('')
+    const[password, setPassword]=useState('')
+    const[cipherText, setCipherText]=useState('')
 
     const handleClick=(e)=>{
         e.preventDefault()
@@ -25,6 +27,14 @@ export default function Asymmetric() {
             })
     }
 
+    // useEffect(()=>{
+    //     fetch("http://localhost:8080/asy/c-t")
+    //     .then(response=>response.json())
+    //     .then((result)=>{
+    //         setCipherText(result)
+    //     })
+    // })
+
   return (
 
     <Container>
@@ -34,15 +44,16 @@ export default function Asymmetric() {
             <TextField id="outlined-basic" label="Text to cipher" variant="outlined" style={fieldStyle} fullWidth 
                 value={plainText} onChange={(e)=>setPlainText(e.target.value)}/>
 
-            <TextField id="outlined-basic" label="Password" variant="outlined" style={fieldStyle} fullWidth
+            <TextField id="outlined-basic" label="Password" variant="outlined" type="password" style={fieldStyle} fullWidth
                 value={password} onChange={(e)=>setPassword(e.target.value)}/>
 
             <Button variant="contained" style={fieldStyle} onClick={handleClick}>Execute Cryption</Button>
             </Form>
-
-            {plainText}
-            {password}
         </Paper>
+
+        {/* <Paper elevation={3} style={paperStyle}>
+            {cipherText}   
+        </Paper> */}
     </Container>
 
   );
