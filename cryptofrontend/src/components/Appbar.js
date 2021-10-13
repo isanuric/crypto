@@ -6,10 +6,15 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 
+
+const customStyle = {
+    background : '#2E3B55'
+};
+
 export default function ButtonAppBar() {
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar style={{ background: '#2E3B55' }}>
+      <AppBar style={ customStyle }>
         <Toolbar>
           <IconButton
             size="large"
