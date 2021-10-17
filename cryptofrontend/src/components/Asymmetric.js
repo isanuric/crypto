@@ -1,5 +1,5 @@
 //import * as React from 'react';
-import {useEffect, useState} from 'react';
+import { useState} from 'react';
 import Form from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import { Button, Container, Paper } from '@mui/material';
@@ -10,7 +10,7 @@ export default function Asymmetric() {
     const fieldStyle={margin:'5px auto'}
     const[plainText, setPlainText]=useState('')
     const[password, setPassword]=useState('')
-    const[cipherText, setCipherText]=useState('')
+    // const[cipherText, setCipherText]=useState('')
 
     const handleClick=(e)=>{
         e.preventDefault()
